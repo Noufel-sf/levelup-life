@@ -19,6 +19,9 @@ import {
   Zap,
   Layers,
   Flame,
+  CornerDownRight,
+  ListTodo,
+  Columns,
 } from 'lucide-react'
 import { RetroButton } from '@/components/8bit/RetroButton'
 import { RetroBadge } from '@/components/8bit/RetroBadge'
@@ -36,9 +39,20 @@ export const PlannerView: React.FC<PlannerViewProps> = ({ onRefreshProfile }) =>
   const [goals, setGoals] = useState<GoalDTO[]>([])
   const [toastMessage, setToastMessage] = useState<string | null>(null)
 
+  const todayStr = new Date().toISOString().split('T')[0]
+
+  // Selected Day for the Full-Width Day View (defaults to Today)
+  const [selectedDayStr, setSelectedDayStr] = useState<string>(todayStr)
+
+  // View mode: 'single-day' (one day full width with tasks below it) or 'all-stacked'
+  const [viewLayout, setViewLayout] = useState<'single-day' | 'all-stacked'>('single-day')
+
+  // Quick Inline Add Task input
+  const [inlineTaskTitle, setInlineTaskTitle] = useState('')
+  const [inlineDuration, setInlineDuration] = useState(45)
+
   // Quick Backlog input
   const [backlogTitle, setBacklogTitle] = useState('')
-  const [showBacklog, setShowBacklog] = useState(true)
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -52,8 +66,6 @@ export const PlannerView: React.FC<PlannerViewProps> = ({ onRefreshProfile }) =>
   const [formStartTime, setFormStartTime] = useState('09:00')
   const [formColor, setFormColor] = useState('cyan')
   const [formXp, setFormXp] = useState(20)
-
-  const todayStr = new Date().toISOString().split('T')[0]
 
   useEffect(() => {
     loadData()
@@ -89,8 +101,17 @@ export const PlannerView: React.FC<PlannerViewProps> = ({ onRefreshProfile }) =>
     })
   }, [currentDate])
 
-  const weekStartStr = weekDays[0].toISOString().split('T')[0]
-  const weekEndStr = weekDays[6].toISOString().split('T')[0]
+  // Ensure selectedDayStr stays within the active week when changing weeks
+  useEffect(() => {
+    const weekStrings = weekDays.map((d) => d.toISOString().split('T')[0])
+    if (!weekStrings.includes(selectedDayStr)) {
+      if (weekStrings.includes(todayStr)) {
+        setSelectedDayStr(todayStr)
+      } else {
+        setSelectedDayStr(weekStrings[0])
+      }
+    }
+  }, [weekDays, selectedDayStr, todayStr])
 
   // Week navigation
   const handlePrevWeek = () => {
@@ -107,6 +128,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({ onRefreshProfile }) =>
 
   const handleToday = () => {
     setCurrentDate(new Date())
+    setSelectedDayStr(todayStr)
   }
 
   // Week dates string
@@ -175,8 +197,8 @@ export const PlannerView: React.FC<PlannerViewProps> = ({ onRefreshProfile }) =>
   }
 
   // Move task to next day
-  const handleMoveToNextDay = async (task: TaskDTO, e: React.MouseEvent) => {
-    e.stopPropagation()
+  const handleMoveToNextDay = async (task: TaskDTO, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation()
     if (!window.electronAPI || !task.scheduledDate) return
 
     const currentD = new Date(task.scheduledDate)
@@ -189,8 +211,8 @@ export const PlannerView: React.FC<PlannerViewProps> = ({ onRefreshProfile }) =>
   }
 
   // Move task to previous day
-  const handleMoveToPrevDay = async (task: TaskDTO, e: React.MouseEvent) => {
-    e.stopPropagation()
+  const handleMoveToPrevDay = async (task: TaskDTO, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation()
     if (!window.electronAPI || !task.scheduledDate) return
 
     const currentD = new Date(task.scheduledDate)
@@ -199,6 +221,48 @@ export const PlannerView: React.FC<PlannerViewProps> = ({ onRefreshProfile }) =>
 
     await window.electronAPI.updateTask(task.id, { scheduledDate: prevStr })
     showToast(`Moved to ${currentD.toLocaleDateString('en', { weekday: 'short' })}!`)
+    loadData()
+  }
+
+  // Shift all remaining unfinished tasks of selected day to tomorrow
+  const handleShiftUnfinishedToTomorrow = async () => {
+    if (!window.electronAPI) return
+    const uncompleted = (weekTasks[selectedDayStr] || []).filter((t) => t.status !== 'COMPLETED')
+    if (uncompleted.length === 0) {
+      showToast('No unfinished missions to shift!')
+      return
+    }
+
+    const currentD = new Date(selectedDayStr)
+    currentD.setDate(currentD.getDate() + 1)
+    const nextStr = currentD.toISOString().split('T')[0]
+
+    await Promise.all(
+      uncompleted.map((t) =>
+        window.electronAPI!.updateTask(t.id, { scheduledDate: nextStr })
+      )
+    )
+
+    showToast(`Shifted ${uncompleted.length} missions to tomorrow!`)
+    loadData()
+  }
+
+  // Inline Quick Add into the Selected Day
+  const handleInlineAdd = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!inlineTaskTitle.trim() || !window.electronAPI) return
+
+    await window.electronAPI.createTask({
+      title: inlineTaskTitle.trim(),
+      type: 'WEEKLY_PLAN',
+      scheduledDate: selectedDayStr,
+      estimatedMin: inlineDuration,
+      priority: 'MEDIUM',
+      xpReward: 20,
+    })
+
+    setInlineTaskTitle('')
+    showToast('Mission deployed to timeline!')
     loadData()
   }
 
@@ -214,7 +278,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({ onRefreshProfile }) =>
   const openNewTaskModal = (dateStr?: string) => {
     setSelectedTask(null)
     setFormTitle('')
-    setFormDate(dateStr || todayStr)
+    setFormDate(dateStr || selectedDayStr)
     setFormEstimatedMin(45)
     setFormPriority('MEDIUM')
     setFormCategory('General')
@@ -228,7 +292,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({ onRefreshProfile }) =>
   const openEditTaskModal = (task: TaskDTO) => {
     setSelectedTask(task)
     setFormTitle(task.title)
-    setFormDate(task.scheduledDate || todayStr)
+    setFormDate(task.scheduledDate || selectedDayStr)
     setFormEstimatedMin(task.estimatedMin || 45)
     setFormPriority(task.priority || 'MEDIUM')
     setFormCategory(task.goal?.category || 'General')
@@ -303,8 +367,19 @@ export const PlannerView: React.FC<PlannerViewProps> = ({ onRefreshProfile }) =>
     loadData()
   }
 
+  // Selected Day Metadata
+  const selectedDateObj = useMemo(() => new Date(selectedDayStr), [selectedDayStr])
+  const selectedDayTaskList = weekTasks[selectedDayStr] || []
+  const selectedDayMinutes = dailyWorkload[selectedDayStr] || 0
+  const selectedDayHours = (selectedDayMinutes / 60).toFixed(1)
+  const isSelectedOverloaded = selectedDayMinutes > 330 // > 5.5 hours
+  const selectedDayCompleted = selectedDayTaskList.filter((t) => t.status === 'COMPLETED').length
+  const selectedDayTotal = selectedDayTaskList.length
+  const selectedDayProgress =
+    selectedDayTotal > 0 ? Math.round((selectedDayCompleted / selectedDayTotal) * 100) : 0
+
   return (
-    <div className="space-y-6 pb-16 select-none relative">
+    <div className="space-y-6 pb-20 select-none relative">
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed top-12 right-6 z-50 bg-gradient-to-r from-primary to-neon-pink text-white px-4 py-2 border-2 border-neon-cyan shadow-[0_0_25px_rgba(34,211,238,0.6)] font-mono text-xs flex items-center gap-2">
@@ -329,7 +404,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({ onRefreshProfile }) =>
                 WEEKLY PLANNER
               </span>
               <span className="text-[10px] font-mono px-2 py-0.5 border font-bold text-neon-yellow border-neon-yellow/60 bg-neon-yellow/15 shadow-[0_0_8px_rgba(250,204,21,0.3)]">
-                [TIMELINE MATRIX]
+                [FULL-WIDTH DAY TIMELINE]
               </span>
               {overloadedDays.length > 0 && (
                 <span className="text-[10px] font-mono px-2 py-0.5 border font-bold text-neon-pink border-neon-pink/80 bg-neon-pink/20 shadow-[0_0_12px_rgba(236,72,153,0.5)] animate-pulse flex items-center gap-1">
@@ -345,7 +420,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({ onRefreshProfile }) =>
               </span>
             </h2>
             <p className="text-xs text-muted-foreground mt-1 font-mono">
-              Balance realistic workloads, prevent burnout, and level up through structured daily timeblocks.
+              Select any day from the weekly strip below to expand full-width missions and timeblocks.
             </p>
           </div>
 
@@ -379,10 +454,10 @@ export const PlannerView: React.FC<PlannerViewProps> = ({ onRefreshProfile }) =>
               variant="cyan"
               size="sm"
               pixelFont
-              onClick={() => openNewTaskModal()}
+              onClick={() => openNewTaskModal(selectedDayStr)}
             >
               <Plus className="w-3.5 h-3.5 mr-1" />
-              Add Mission
+              Deploy Mission
             </RetroButton>
           </div>
         </div>
@@ -455,147 +530,259 @@ export const PlannerView: React.FC<PlannerViewProps> = ({ onRefreshProfile }) =>
         </div>
       </div>
 
-      {/* 7 Days Columns (The Weekly Grid) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-3.5 items-start">
-        {weekDays.map((d, index) => {
-          const dayStr = d.toISOString().split('T')[0]
-          const isToday = dayStr === todayStr
-          const dayName = d.toLocaleDateString('en', { weekday: 'short' }).toUpperCase()
-          const dayNumber = `${d.getDate()}/${d.getMonth() + 1}`
-          const dayTaskList = weekTasks[dayStr] || []
-          const dayMinutes = dailyWorkload[dayStr] || 0
-          const dayHours = (dayMinutes / 60).toFixed(1)
-          const isOverloaded = dayMinutes > 330 // > 5.5 hours
-
-          // Card theme based on day of week & overload
-          const dayColors = [
-            'border-t-neon-cyan',
-            'border-t-primary',
-            'border-t-neon-yellow',
-            'border-t-neon-pink',
-            'border-t-neon-green',
-            'border-t-neon-cyan',
-            'border-t-primary',
-          ]
-          const topStripeColor = isOverloaded ? 'border-t-destructive' : dayColors[index % dayColors.length]
-
-          return (
-            <div
-              key={dayStr}
-              className={`bg-card border-2 transition-all relative overflow-hidden flex flex-col min-h-[460px] ${
-                isToday
-                  ? 'border-neon-cyan shadow-[0_0_20px_rgba(34,211,238,0.3)] bg-gradient-to-b from-card via-[#131220] to-card'
-                  : isOverloaded
-                  ? 'border-destructive shadow-[0_0_15px_rgba(239,68,68,0.3)]'
-                  : 'border-border hover:border-border/90'
-              } ${topStripeColor} border-t-4`}
+      {/* Horizontal 7-Day Interactive Selector Bar */}
+      <div className="bg-card border-2 border-border p-2.5 shadow-[0_0_20px_rgba(0,0,0,0.4)]">
+        <div className="flex items-center justify-between pb-2 mb-2 border-b border-border text-xs font-mono text-muted-foreground">
+          <span className="flex items-center gap-1.5 font-bold text-foreground">
+            <Columns className="w-3.5 h-3.5 text-neon-cyan" />
+            SELECT DAY TO VIEW FULL TIMELINE:
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setViewLayout('single-day')}
+              className={`px-2 py-0.5 text-[10px] font-mono uppercase font-bold border transition-colors cursor-pointer ${
+                viewLayout === 'single-day'
+                  ? 'bg-neon-cyan text-black border-neon-cyan'
+                  : 'bg-secondary text-muted-foreground border-border hover:text-foreground'
+              }`}
             >
-              {/* Corner pixel dot */}
-              <span
-                className={`absolute top-0 right-0 w-2 h-2 ${
-                  isToday ? 'bg-neon-cyan' : isOverloaded ? 'bg-destructive' : 'bg-transparent'
+              Single Day Focus
+            </button>
+            <button
+              onClick={() => setViewLayout('all-stacked')}
+              className={`px-2 py-0.5 text-[10px] font-mono uppercase font-bold border transition-colors cursor-pointer ${
+                viewLayout === 'all-stacked'
+                  ? 'bg-neon-cyan text-black border-neon-cyan'
+                  : 'bg-secondary text-muted-foreground border-border hover:text-foreground'
+              }`}
+            >
+              All Days Stacked
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-7 gap-2">
+          {weekDays.map((d, index) => {
+            const dayStr = d.toISOString().split('T')[0]
+            const isToday = dayStr === todayStr
+            const isSelected = selectedDayStr === dayStr && viewLayout === 'single-day'
+            const dayName = d.toLocaleDateString('en', { weekday: 'short' }).toUpperCase()
+            const dayNumber = `${d.getDate()}/${d.getMonth() + 1}`
+            const dayTaskList = weekTasks[dayStr] || []
+            const dayMinutes = dailyWorkload[dayStr] || 0
+            const dayHours = (dayMinutes / 60).toFixed(1)
+            const isOverloaded = dayMinutes > 330
+
+            return (
+              <button
+                key={dayStr}
+                type="button"
+                onClick={() => {
+                  setSelectedDayStr(dayStr)
+                  setViewLayout('single-day')
+                }}
+                className={`p-2.5 border-2 text-left transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between ${
+                  isSelected
+                    ? 'border-neon-cyan bg-neon-cyan/15 shadow-[0_0_15px_rgba(34,211,238,0.4)] scale-[1.02]'
+                    : isToday
+                    ? 'border-primary/80 bg-primary/10 hover:border-neon-cyan'
+                    : isOverloaded
+                    ? 'border-destructive/80 bg-destructive/10 hover:border-destructive'
+                    : 'border-border bg-secondary hover:border-neon-cyan/50'
                 }`}
-              />
+              >
+                {/* Active day indicator beacon */}
+                {isSelected && (
+                  <span className="absolute top-0 right-0 w-2 h-2 bg-neon-cyan shadow-[0_0_6px_#22d3ee]" />
+                )}
 
-              {/* Day Header */}
-              <div className="p-3 border-b border-border/80 bg-secondary/60">
-                <div className="flex items-center justify-between mb-1">
-                  <div className="flex items-center space-x-1.5">
-                    <span className="font-mono text-xs font-bold text-foreground">{dayName}</span>
-                    <span className="font-mono text-[11px] text-muted-foreground">{dayNumber}</span>
-                  </div>
-                  {isToday ? (
-                    <span className="text-[8px] font-mono px-1.5 py-0.2 bg-neon-cyan text-black font-bold shadow-[0_0_8px_rgba(34,211,238,0.5)]">
-                      TODAY
-                    </span>
-                  ) : isOverloaded ? (
-                    <span className="text-[8px] font-mono px-1 py-0.2 bg-destructive text-white font-bold animate-pulse">
-                      OVERLOAD
-                    </span>
-                  ) : null}
-                </div>
-
-                {/* Daily Workload Bar */}
-                <div className="mt-2 space-y-1">
-                  <div className="flex justify-between items-center text-[9px] font-mono">
-                    <span className={isOverloaded ? 'text-destructive font-bold' : 'text-muted-foreground'}>
-                      {dayHours}h planned
-                    </span>
-                    <span className="text-neon-cyan font-bold">
-                      {dayTaskList.filter((t) => t.status === 'COMPLETED').length}/{dayTaskList.length}
-                    </span>
-                  </div>
-                  <div className="w-full bg-background h-1.5 border border-border/60 overflow-hidden">
-                    <div
-                      className={`h-full transition-all duration-300 ${
-                        isOverloaded
-                          ? 'bg-destructive shadow-[0_0_6px_#ef4444]'
-                          : dayMinutes > 240
-                          ? 'bg-neon-yellow shadow-[0_0_6px_#facc15]'
-                          : 'bg-neon-green shadow-[0_0_6px_#a3e635]'
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <span
+                      className={`font-mono text-xs font-bold ${
+                        isSelected ? 'text-neon-cyan' : isToday ? 'text-primary' : 'text-foreground'
                       }`}
-                      style={{ width: `${Math.min(100, (dayMinutes / 360) * 100)}%` }}
-                    />
+                    >
+                      {dayName}
+                    </span>
+                    <span className="font-mono text-[10px] text-muted-foreground">{dayNumber}</span>
+                  </div>
+
+                  <div className="flex items-center justify-between text-[9px] font-mono">
+                    <span className={isOverloaded ? 'text-destructive font-bold' : 'text-muted-foreground'}>
+                      {dayHours}h
+                    </span>
+                    <span
+                      className={`font-bold ${
+                        isSelected ? 'text-neon-cyan' : 'text-foreground'
+                      }`}
+                    >
+                      {dayTaskList.length} quests
+                    </span>
                   </div>
                 </div>
+
+                {/* Mini capacity indicator */}
+                <div className="w-full bg-background h-1 border border-border/60 overflow-hidden mt-1.5">
+                  <div
+                    className={`h-full ${
+                      isOverloaded
+                        ? 'bg-destructive'
+                        : dayMinutes > 240
+                        ? 'bg-neon-yellow'
+                        : 'bg-neon-green'
+                    }`}
+                    style={{ width: `${Math.min(100, (dayMinutes / 360) * 100)}%` }}
+                  />
+                </div>
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* FULL WIDTH DAY VIEW (Requested by User) */}
+      {viewLayout === 'single-day' ? (
+        <div className="space-y-4">
+          {/* Active Day Full-Width Header Card */}
+          <div
+            className={`p-5 bg-card border-2 shadow-[0_0_30px_rgba(34,211,238,0.2)] relative overflow-hidden ${
+              isSelectedOverloaded ? 'border-destructive' : 'border-neon-cyan'
+            }`}
+          >
+            {/* Corner pixel dots */}
+            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-neon-pink shadow-[0_0_8px_#ec4899]" />
+            <span className="absolute -bottom-1 -left-1 w-2.5 h-2.5 bg-neon-green shadow-[0_0_8px_#a3e635]" />
+            <span className="absolute -top-1 -left-1 w-2.5 h-2.5 bg-neon-cyan shadow-[0_0_8px_#22d3ee]" />
+
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center space-x-2 font-mono text-xs font-bold mb-1.5 flex-wrap gap-y-1">
+                  <span className="text-[10px] font-mono px-2 py-0.5 border font-bold text-neon-cyan border-neon-cyan/60 bg-neon-cyan/15 shadow-[0_0_8px_rgba(34,211,238,0.3)]">
+                    {selectedDateObj.toLocaleDateString('en', { weekday: 'long' }).toUpperCase()}
+                  </span>
+                  {selectedDayStr === todayStr && (
+                    <span className="text-[10px] font-mono px-2 py-0.5 border font-bold text-black border-neon-cyan bg-neon-cyan shadow-[0_0_10px_rgba(34,211,238,0.6)] animate-pulse">
+                      TODAY'S BATTLEFIELD
+                    </span>
+                  )}
+                  <span
+                    className={`text-[10px] font-mono px-2 py-0.5 border font-bold ${
+                      isSelectedOverloaded
+                        ? 'text-destructive border-destructive/60 bg-destructive/15'
+                        : selectedDayMinutes > 240
+                        ? 'text-neon-yellow border-neon-yellow/60 bg-neon-yellow/15'
+                        : 'text-neon-green border-neon-green/60 bg-neon-green/15'
+                    }`}
+                  >
+                    WORKLOAD: {selectedDayHours}H / 5.0H CAPACITY
+                  </span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 border font-bold text-primary border-primary/60 bg-primary/15">
+                    {selectedDayCompleted}/{selectedDayTotal} DONE ({selectedDayProgress}%)
+                  </span>
+                </div>
+
+                <h3 className="text-xl sm:text-2xl font-bold font-mono text-foreground tracking-tight">
+                  {selectedDateObj.toLocaleDateString('en', {
+                    weekday: 'long',
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                  })}
+                </h3>
               </div>
 
-              {/* Task Cards Container */}
-              <div className="p-2 space-y-2 flex-1 overflow-y-auto">
-                {dayTaskList.length === 0 ? (
+              {/* Day Level Action Buttons */}
+              <div className="flex flex-wrap items-center gap-2">
+                <RetroButton
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleShiftUnfinishedToTomorrow}
+                  title="Shift all incomplete missions of this day to tomorrow"
+                >
+                  <CornerDownRight className="w-3.5 h-3.5 mr-1 text-neon-yellow" />
+                  Shift Incomplete to Tomorrow
+                </RetroButton>
+
+                <RetroButton
+                  variant="cyan"
+                  size="sm"
+                  pixelFont
+                  onClick={() => openNewTaskModal(selectedDayStr)}
+                >
+                  <Plus className="w-3.5 h-3.5 mr-1" />
+                  Add Mission
+                </RetroButton>
+              </div>
+            </div>
+
+            {/* Daily Completion Progress Bar */}
+            <div className="mt-4 pt-3 border-t border-border/80">
+              <RetroProgressBar value={selectedDayProgress} max={100} variant="cyan" />
+            </div>
+          </div>
+
+          {/* Full-Width Task Cards Container */}
+          <div className="space-y-2.5">
+            {selectedDayTaskList.length === 0 ? (
+              <div
+                onClick={() => openNewTaskModal(selectedDayStr)}
+                className="py-12 border-2 border-dashed border-border/60 hover:border-neon-cyan/70 bg-card/40 flex flex-col items-center justify-center text-center p-6 cursor-pointer group transition-colors shadow-sm"
+              >
+                <Plus className="w-8 h-8 text-muted-foreground group-hover:text-neon-cyan group-hover:scale-125 transition-all mb-2" />
+                <p className="font-mono font-bold text-foreground text-sm">
+                  No missions scheduled for {selectedDateObj.toLocaleDateString('en', { weekday: 'long' })}
+                </p>
+                <p className="text-xs font-mono text-muted-foreground mt-1 max-w-md">
+                  Click here to deploy a new mission or drag one from your quest backlog below.
+                </p>
+              </div>
+            ) : (
+              selectedDayTaskList.map((task) => {
+                const isDone = task.status === 'COMPLETED'
+                const priorityStyles =
+                  task.priority === 'CRITICAL'
+                    ? 'border-l-4 border-l-neon-pink bg-neon-pink/5 hover:border-neon-pink'
+                    : task.priority === 'HIGH'
+                    ? 'border-l-4 border-l-neon-yellow bg-neon-yellow/5 hover:border-neon-yellow'
+                    : 'border-l-4 border-l-neon-cyan bg-neon-cyan/5 hover:border-neon-cyan'
+
+                return (
                   <div
-                    onClick={() => openNewTaskModal(dayStr)}
-                    className="h-32 border-2 border-dashed border-border/50 hover:border-neon-cyan/60 flex flex-col items-center justify-center text-center p-3 cursor-pointer group transition-colors bg-secondary/20"
+                    key={task.id}
+                    onClick={() => openEditTaskModal(task)}
+                    className={`p-4 bg-card border-2 border-border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer group ${
+                      isDone
+                        ? 'opacity-60 bg-secondary/40 border-border/40'
+                        : `${priorityStyles} hover:shadow-[0_0_15px_rgba(34,211,238,0.25)]`
+                    }`}
                   >
-                    <Plus className="w-4 h-4 text-muted-foreground group-hover:text-neon-cyan group-hover:scale-125 transition-all mb-1" />
-                    <span className="text-[10px] font-mono text-muted-foreground group-hover:text-foreground">
-                      Deploy Mission
-                    </span>
-                  </div>
-                ) : (
-                  dayTaskList.map((task) => {
-                    const isDone = task.status === 'COMPLETED'
-                    return (
-                      <div
-                        key={task.id}
-                        onClick={() => openEditTaskModal(task)}
-                        className={`p-2.5 border transition-all text-left relative group cursor-pointer ${
-                          isDone
-                            ? 'bg-secondary/40 border-border/40 opacity-50'
-                            : 'bg-secondary border-border hover:border-neon-cyan/70 hover:shadow-[0_0_12px_rgba(34,211,238,0.2)]'
-                        }`}
+                    {/* Left: Checkbox + Title + Badges */}
+                    <div className="flex items-start sm:items-center space-x-3.5 flex-1 min-w-0">
+                      <button
+                        type="button"
+                        onClick={(e) => handleToggleTask(task.id, e)}
+                        className="mt-0.5 sm:mt-0 shrink-0 hover:scale-125 transition-transform"
+                        title={isDone ? 'Mark Todo' : 'Conquer Mission'}
                       >
-                        {/* Title & Checkbox */}
-                        <div className="flex items-start justify-between gap-1.5 mb-1.5">
-                          <button
-                            type="button"
-                            onClick={(e) => handleToggleTask(task.id, e)}
-                            className="mt-0.5 shrink-0 hover:scale-110 transition-transform"
-                            title={isDone ? 'Mark Todo' : 'Complete Quest'}
-                          >
-                            {isDone ? (
-                              <CheckCircle2 className="w-4 h-4 text-neon-green" />
-                            ) : (
-                              <Circle className="w-4 h-4 text-neon-cyan" />
-                            )}
-                          </button>
+                        {isDone ? (
+                          <CheckCircle2 className="w-5 h-5 text-neon-green" />
+                        ) : (
+                          <Circle className="w-5 h-5 text-neon-cyan" />
+                        )}
+                      </button>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center space-x-2 flex-wrap gap-y-1 mb-1">
                           <p
-                            className={`text-[11px] font-mono font-bold leading-tight flex-1 ${
+                            className={`font-mono text-sm font-bold ${
                               isDone ? 'line-through text-muted-foreground' : 'text-foreground'
                             }`}
                           >
                             {task.title}
                           </p>
-                        </div>
-
-                        {/* Badges: Time, Priority, XP */}
-                        <div className="flex items-center justify-between text-[9px] font-mono pt-1 border-t border-border/50">
-                          <span className="text-muted-foreground flex items-center">
-                            <Clock className="w-2.5 h-2.5 mr-0.5 text-neon-yellow" />
-                            {task.estimatedMin || 30}m
-                          </span>
                           <span
-                            className={`px-1 py-0.2 border uppercase font-bold text-[8px] ${
+                            className={`text-[9px] font-mono px-2 py-0.5 border uppercase font-bold ${
                               task.priority === 'CRITICAL'
                                 ? 'text-neon-pink border-neon-pink/60 bg-neon-pink/15'
                                 : task.priority === 'HIGH'
@@ -603,72 +790,238 @@ export const PlannerView: React.FC<PlannerViewProps> = ({ onRefreshProfile }) =>
                                 : 'text-neon-cyan border-neon-cyan/60 bg-neon-cyan/15'
                             }`}
                           >
-                            +{task.xpReward} XP
+                            {task.priority}
                           </span>
+                          {task.goal && (
+                            <span className="text-[9px] font-mono px-2 py-0.5 border text-primary border-primary/60 bg-primary/15">
+                              {task.goal.title}
+                            </span>
+                          )}
                         </div>
 
-                        {/* Quick Reschedule Arrows (visible on hover) */}
-                        <div className="mt-2 pt-1 border-t border-border/40 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            type="button"
-                            onClick={(e) => handleMoveToPrevDay(task, e)}
-                            className="p-0.5 text-muted-foreground hover:text-neon-cyan transition-colors"
-                            title="Move to Previous Day"
-                          >
-                            <ArrowLeft className="w-3 h-3" />
-                          </button>
-                          <span className="text-[8px] font-mono text-muted-foreground">SHIFT</span>
-                          <button
-                            type="button"
-                            onClick={(e) => handleMoveToNextDay(task, e)}
-                            className="p-0.5 text-muted-foreground hover:text-neon-cyan transition-colors"
-                            title="Move to Tomorrow"
-                          >
-                            <ArrowRight className="w-3 h-3" />
-                          </button>
+                        <div className="flex items-center space-x-3 text-xs font-mono text-muted-foreground">
+                          <span className="flex items-center">
+                            <Clock className="w-3 h-3 mr-1 text-neon-yellow" />
+                            {task.startTime || '09:00'} ({task.estimatedMin || 45} mins)
+                          </span>
+                          <span>•</span>
+                          <span className="text-neon-cyan">+{task.xpReward} XP Reward</span>
                         </div>
                       </div>
-                    )
-                  })
-                )}
-              </div>
+                    </div>
 
-              {/* Bottom Card Add Button */}
-              <div className="p-2 border-t border-border/60 bg-secondary/40">
-                <button
-                  type="button"
-                  onClick={() => openNewTaskModal(dayStr)}
-                  className="w-full py-1 text-[10px] font-mono font-bold text-muted-foreground hover:text-neon-cyan hover:bg-secondary flex items-center justify-center transition-colors border border-transparent hover:border-border cursor-pointer"
+                    {/* Right: Actions */}
+                    <div className="flex items-center space-x-2 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-border/50 justify-end">
+                      <button
+                        type="button"
+                        onClick={(e) => handleMoveToPrevDay(task, e)}
+                        className="p-1.5 bg-secondary border border-border hover:border-neon-cyan hover:text-neon-cyan transition-colors text-xs font-mono flex items-center gap-1 cursor-pointer"
+                        title="Shift to Previous Day"
+                      >
+                        <ArrowLeft className="w-3 h-3" />
+                        <span className="hidden md:inline">Yesterday</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={(e) => handleMoveToNextDay(task, e)}
+                        className="p-1.5 bg-secondary border border-border hover:border-neon-cyan hover:text-neon-cyan transition-colors text-xs font-mono flex items-center gap-1 cursor-pointer"
+                        title="Shift to Tomorrow"
+                      >
+                        <span className="hidden md:inline">Tomorrow</span>
+                        <ArrowRight className="w-3 h-3" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          openEditTaskModal(task)
+                        }}
+                        className="p-1.5 bg-secondary border border-border hover:border-neon-cyan hover:text-neon-cyan transition-colors cursor-pointer"
+                        title="Edit Mission"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDeleteTask(task.id)
+                        }}
+                        className="p-1.5 bg-secondary border border-border hover:border-destructive hover:text-destructive transition-colors cursor-pointer"
+                        title="Eliminate"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                )
+              })
+            )}
+
+            {/* Inline Quick Add Input for the Active Day */}
+            <form
+              onSubmit={handleInlineAdd}
+              className="p-3 bg-secondary border-2 border-dashed border-border hover:border-neon-cyan/80 transition-colors flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4 text-neon-cyan shrink-0" />
+              <input
+                type="text"
+                placeholder={`Quickly inscribe a new mission for ${selectedDateObj.toLocaleDateString(
+                  'en',
+                  { weekday: 'long' }
+                )}... (Press Enter to deploy)`}
+                value={inlineTaskTitle}
+                onChange={(e) => setInlineTaskTitle(e.target.value)}
+                className="flex-1 bg-transparent border-none text-xs font-mono text-foreground placeholder:text-muted-foreground focus:outline-none"
+              />
+              <div className="flex items-center gap-1 shrink-0">
+                <select
+                  value={inlineDuration}
+                  onChange={(e) => setInlineDuration(Number(e.target.value))}
+                  className="bg-card border border-border text-[10px] font-mono px-2 py-1 text-foreground focus:outline-none"
                 >
-                  <Plus className="w-3 h-3 mr-1" /> Add
-                </button>
+                  <option value={15}>15m</option>
+                  <option value={30}>30m</option>
+                  <option value={45}>45m</option>
+                  <option value={60}>60m</option>
+                  <option value={90}>90m</option>
+                  <option value={120}>2h</option>
+                </select>
+                <RetroButton type="submit" size="sm" variant="cyan" pixelFont>
+                  Deploy
+                </RetroButton>
               </div>
-            </div>
-          )
-        })}
-      </div>
+            </form>
+          </div>
+        </div>
+      ) : (
+        /* ALL DAYS STACKED (FULL WIDTH FOR EACH DAY) */
+        <div className="space-y-6">
+          {weekDays.map((d, index) => {
+            const dayStr = d.toISOString().split('T')[0]
+            const isToday = dayStr === todayStr
+            const dayTaskList = weekTasks[dayStr] || []
+            const dayMinutes = dailyWorkload[dayStr] || 0
+            const dayHours = (dayMinutes / 60).toFixed(1)
+            const isOverloaded = dayMinutes > 330
 
-      {/* Quest Backlog / Unscheduled Missions Drawer */}
-      <div className="p-4 bg-card border-2 border-neon-yellow shadow-[0_0_25px_rgba(250,204,21,0.2)] relative">
+            return (
+              <div
+                key={dayStr}
+                className={`p-5 bg-card border-2 transition-all shadow-[0_0_20px_rgba(0,0,0,0.3)] ${
+                  isToday
+                    ? 'border-neon-cyan shadow-[0_0_20px_rgba(34,211,238,0.25)]'
+                    : isOverloaded
+                    ? 'border-destructive'
+                    : 'border-border'
+                }`}
+              >
+                {/* Header */}
+                <div className="flex items-center justify-between pb-3 border-b border-border mb-3">
+                  <div className="flex items-center space-x-2">
+                    <span className="font-mono text-base font-bold text-foreground">
+                      {d.toLocaleDateString('en', { weekday: 'long', day: 'numeric', month: 'short' })}
+                    </span>
+                    {isToday && (
+                      <span className="text-[9px] font-mono px-1.5 py-0.2 bg-neon-cyan text-black font-bold">
+                        TODAY
+                      </span>
+                    )}
+                    <span className="text-[10px] font-mono text-muted-foreground">
+                      {dayHours}h planned • {dayTaskList.length} missions
+                    </span>
+                  </div>
+
+                  <RetroButton
+                    variant="cyan"
+                    size="sm"
+                    pixelFont
+                    onClick={() => openNewTaskModal(dayStr)}
+                  >
+                    <Plus className="w-3 h-3 mr-1" /> Add
+                  </RetroButton>
+                </div>
+
+                {/* Tasks List */}
+                <div className="space-y-2">
+                  {dayTaskList.length === 0 ? (
+                    <p className="text-xs font-mono text-muted-foreground/70 italic py-2">
+                      No missions planned for this day.
+                    </p>
+                  ) : (
+                    dayTaskList.map((task) => {
+                      const isDone = task.status === 'COMPLETED'
+                      return (
+                        <div
+                          key={task.id}
+                          onClick={() => openEditTaskModal(task)}
+                          className={`p-3 bg-secondary border border-border flex items-center justify-between gap-3 cursor-pointer ${
+                            isDone ? 'opacity-50 line-through' : 'hover:border-neon-cyan'
+                          }`}
+                        >
+                          <div className="flex items-center space-x-3">
+                            <button
+                              type="button"
+                              onClick={(e) => handleToggleTask(task.id, e)}
+                            >
+                              {isDone ? (
+                                <CheckCircle2 className="w-4 h-4 text-neon-green" />
+                              ) : (
+                                <Circle className="w-4 h-4 text-neon-cyan" />
+                              )}
+                            </button>
+                            <span className="font-mono text-xs font-bold text-foreground">
+                              {task.title}
+                            </span>
+                            <span className="text-[10px] font-mono text-muted-foreground">
+                              {task.estimatedMin || 30}m
+                            </span>
+                          </div>
+
+                          <div className="flex items-center space-x-2">
+                            <span className="text-[9px] font-mono text-neon-cyan">
+                              +{task.xpReward} XP
+                            </span>
+                          </div>
+                        </div>
+                      )
+                    })
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Quest Backlog & Staging Pool (Spacious Full Width at the bottom) */}
+      <div className="p-5 bg-card border-2 border-neon-yellow shadow-[0_0_25px_rgba(250,204,21,0.2)] relative">
         <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-neon-yellow shadow-[0_0_6px_#facc15]" />
 
-        <div className="flex items-center justify-between pb-3 border-b border-neon-yellow/40 mb-3">
-          <div className="flex items-center space-x-2">
-            <div className="w-7 h-7 bg-neon-yellow/20 border border-neon-yellow flex items-center justify-center text-neon-yellow shadow-[0_0_10px_rgba(250,204,21,0.4)]">
+        <div className="flex items-center justify-between pb-3 border-b border-neon-yellow/40 mb-4">
+          <div className="flex items-center space-x-2.5">
+            <div className="w-8 h-8 bg-neon-yellow/20 border border-neon-yellow flex items-center justify-center text-neon-yellow shadow-[0_0_10px_rgba(250,204,21,0.4)]">
               <Layers className="w-4 h-4" />
             </div>
             <div>
               <h3 className="font-pixel text-xs text-neon-yellow tracking-wider">
-                QUEST BACKLOG & STAGING POOL
+                QUEST STAGING POOL & BACKLOG
               </h3>
-              <p className="text-[10px] font-mono text-muted-foreground">
-                Unscheduled objectives. Deploy directly into your week to build your battle plan.
+              <p className="text-xs font-mono text-muted-foreground">
+                Unscheduled objectives. Deploy directly onto{' '}
+                <span className="text-neon-cyan font-bold">
+                  {selectedDateObj.toLocaleDateString('en', { weekday: 'long' })}
+                </span>{' '}
+                or any day of this week.
               </p>
             </div>
           </div>
 
-          <span className="text-xs font-mono px-2 py-0.5 border font-bold text-neon-yellow border-neon-yellow/60 bg-neon-yellow/15 shadow-[0_0_8px_rgba(250,204,21,0.3)]">
-            {backlogTasks.length} IN POOL
+          <span className="text-xs font-mono px-2.5 py-1 border font-bold text-neon-yellow border-neon-yellow/60 bg-neon-yellow/15 shadow-[0_0_8px_rgba(250,204,21,0.3)]">
+            {backlogTasks.length} MISSIONS IN POOL
           </span>
         </div>
 
@@ -685,33 +1038,43 @@ export const PlannerView: React.FC<PlannerViewProps> = ({ onRefreshProfile }) =>
           </RetroButton>
         </form>
 
-        {/* Backlog Item List */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
+        {/* Backlog Items List */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {backlogTasks.length === 0 ? (
             <p className="text-xs font-mono text-muted-foreground col-span-full py-4 text-center italic">
-              All quests have been deployed to the timeline! Add new missions above.
+              All quests have been deployed to your timeline! Inscribe new objectives above.
             </p>
           ) : (
             backlogTasks.map((task) => (
               <div
                 key={task.id}
-                className="p-3 bg-secondary border border-border hover:border-neon-yellow/70 transition-all flex flex-col justify-between"
+                className="p-3.5 bg-secondary border border-border hover:border-neon-yellow/70 transition-all flex flex-col justify-between shadow-sm"
               >
                 <div>
-                  <div className="flex items-start justify-between gap-2 mb-1">
+                  <div className="flex items-start justify-between gap-2 mb-1.5">
                     <p className="text-xs font-mono font-bold text-foreground">{task.title}</p>
-                    <span className="text-[8px] font-mono px-1.5 py-0.2 border text-neon-yellow border-neon-yellow/60 bg-neon-yellow/15 shrink-0">
+                    <span className="text-[9px] font-mono px-1.5 py-0.2 border text-neon-yellow border-neon-yellow/60 bg-neon-yellow/15 shrink-0 font-bold">
                       +{task.xpReward} XP
                     </span>
                   </div>
-                  <span className="text-[10px] font-mono text-muted-foreground">
-                    Estimated: {task.estimatedMin || 30}m
+                  <span className="text-[10px] font-mono text-muted-foreground flex items-center">
+                    <Clock className="w-3 h-3 mr-1 text-neon-yellow" />
+                    Estimated: {task.estimatedMin || 45} mins
                   </span>
                 </div>
 
-                {/* Quick Deploy Buttons */}
-                <div className="mt-3 pt-2 border-t border-border/60">
-                  <p className="text-[9px] font-mono text-muted-foreground mb-1">DEPLOY TO DAY:</p>
+                {/* 1-Click Deploy Buttons */}
+                <div className="mt-3 pt-2.5 border-t border-border/60">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-[9px] font-mono text-muted-foreground">DEPLOY TO:</span>
+                    <button
+                      type="button"
+                      onClick={() => handleDeployToDate(task.id, selectedDayStr)}
+                      className="text-[9px] font-mono font-bold text-neon-cyan hover:underline"
+                    >
+                      Deploy to Active Day ({selectedDateObj.toLocaleDateString('en', { weekday: 'short' })})
+                    </button>
+                  </div>
                   <div className="flex flex-wrap gap-1">
                     {weekDays.map((d) => {
                       const dStr = d.toISOString().split('T')[0]
@@ -721,7 +1084,11 @@ export const PlannerView: React.FC<PlannerViewProps> = ({ onRefreshProfile }) =>
                           key={dStr}
                           type="button"
                           onClick={() => handleDeployToDate(task.id, dStr)}
-                          className="px-1.5 py-0.5 text-[9px] font-mono font-bold bg-background border border-border hover:border-neon-cyan hover:text-neon-cyan transition-colors cursor-pointer"
+                          className={`flex-1 py-1 text-[10px] font-mono font-bold border transition-colors cursor-pointer ${
+                            dStr === selectedDayStr
+                              ? 'bg-neon-cyan text-black border-neon-cyan'
+                              : 'bg-background border-border hover:border-neon-cyan hover:text-neon-cyan'
+                          }`}
                           title={`Deploy to ${d.toLocaleDateString('en', { weekday: 'short' })}`}
                         >
                           {dName}
