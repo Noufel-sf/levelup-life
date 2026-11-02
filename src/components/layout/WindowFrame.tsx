@@ -18,9 +18,9 @@ export const WindowFrame: React.FC = () => {
   }
 
   return (
-    <div className="h-9 bg-background/95 border-b border-border flex items-center justify-between select-none px-3 z-50 relative app-drag-region backdrop-blur-md">
+    <div className="h-9 bg-[#09090b]/95 border-b border-border flex items-center justify-between select-none px-3 z-50 relative app-drag-region backdrop-blur-md">
       <div className="flex items-center space-x-2.5 no-drag">
-        <div className="w-6 h-6 bg-card border border-neon-cyan/50 flex items-center justify-center shadow-[0_0_8px_rgba(34,211,238,0.25)] p-0.5">
+        <div className="w-6 h-6 bg-card border-2 border-neon-cyan flex items-center justify-center shadow-[0_0_10px_rgba(34,211,238,0.4)] p-0.5 relative">
           <img
             src="/logo.png"
             alt="LIFE OS"
@@ -28,11 +28,19 @@ export const WindowFrame: React.FC = () => {
           />
         </div>
         <span className="font-pixel text-[10px] text-foreground tracking-wider flex items-center gap-1.5">
-          LIFE <span className="text-neon-cyan">OS</span> <span className="text-primary font-mono">//</span> <span className="text-muted-foreground font-mono text-[9px]">v0.1.0</span>
+          LIFE{' '}
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-cyan via-primary to-neon-pink font-bold">
+            OS
+          </span>{' '}
+          <span className="text-primary font-mono">//</span>{' '}
+          <span className="text-muted-foreground font-mono text-[9px]">v0.1.0</span>
         </span>
-        <div className="flex items-center gap-1.5 px-2 py-0.5 bg-neon-green/10 border border-neon-green/40 text-neon-green text-[9px] font-mono tracking-widest">
+        <div className="flex items-center gap-1.5 px-2 py-0.5 bg-neon-green/15 border border-neon-green/50 text-neon-green text-[9px] font-mono tracking-widest shadow-[0_0_8px_rgba(163,230,53,0.3)]">
           <span className="w-1.5 h-1.5 rounded-full bg-neon-green shadow-[0_0_6px_#a3e635] animate-pulse" />
           <span>STATUS: ONLINE</span>
+        </div>
+        <div className="hidden sm:flex items-center gap-1 px-1.5 py-0.5 bg-neon-cyan/15 border border-neon-cyan/50 text-neon-cyan text-[9px] font-mono tracking-widest shadow-[0_0_8px_rgba(34,211,238,0.3)]">
+          <span>AI SYNC: 100%</span>
         </div>
       </div>
 

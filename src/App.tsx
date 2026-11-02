@@ -65,9 +65,14 @@ export function App() {
       <div className="flex flex-1 overflow-hidden relative">
         <Sidebar currentTab={currentTab} onSelectTab={setCurrentTab} profile={profile} />
 
-        {/* Scrollable Content View with ambient grid */}
+        {/* Scrollable Content View with ambient grid & colorful radiant glows */}
         <main className="flex-1 overflow-y-auto p-6 relative grid-pattern">
-          <div className="max-w-6xl mx-auto">{renderContent()}</div>
+          {/* Ambient colorful cyber light sources */}
+          <div className="absolute top-0 left-1/4 w-[500px] h-[300px] bg-primary/10 rounded-full blur-[140px] pointer-events-none" />
+          <div className="absolute top-1/3 right-10 w-[450px] h-[350px] bg-neon-cyan/10 rounded-full blur-[140px] pointer-events-none" />
+          <div className="absolute bottom-10 left-10 w-[450px] h-[350px] bg-neon-pink/10 rounded-full blur-[140px] pointer-events-none" />
+
+          <div className="max-w-6xl mx-auto relative z-10">{renderContent()}</div>
         </main>
       </div>
     </div>

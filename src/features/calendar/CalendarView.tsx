@@ -192,17 +192,17 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onRefreshProfile }) 
     }
     switch (color) {
       case 'purple':
-        return 'bg-primary/15 border border-primary/60 text-foreground hover:border-primary shadow-[0_0_12px_rgba(168,85,247,0.2)]'
+        return 'bg-primary/20 border-2 border-primary text-[#faf5ff] hover:bg-primary/30 shadow-[0_0_15px_rgba(168,85,247,0.35)]'
       case 'pink':
-        return 'bg-neon-pink/15 border border-neon-pink/60 text-foreground hover:border-neon-pink shadow-[0_0_12px_rgba(236,72,153,0.2)]'
+        return 'bg-neon-pink/20 border-2 border-neon-pink text-[#fdf2f8] hover:bg-neon-pink/30 shadow-[0_0_15px_rgba(236,72,153,0.35)]'
       case 'amber':
       case 'yellow':
-        return 'bg-neon-yellow/15 border border-neon-yellow/60 text-foreground hover:border-neon-yellow shadow-[0_0_12px_rgba(250,204,21,0.2)]'
+        return 'bg-neon-yellow/20 border-2 border-neon-yellow text-[#fefce8] hover:bg-neon-yellow/30 shadow-[0_0_15px_rgba(250,204,21,0.35)]'
       case 'green':
-        return 'bg-neon-green/15 border border-neon-green/60 text-foreground hover:border-neon-green shadow-[0_0_12px_rgba(163,230,53,0.2)]'
+        return 'bg-neon-green/20 border-2 border-neon-green text-[#f0fdf4] hover:bg-neon-green/30 shadow-[0_0_15px_rgba(163,230,53,0.35)]'
       case 'cyan':
       default:
-        return 'bg-neon-cyan/15 border border-neon-cyan/60 text-foreground hover:border-neon-cyan shadow-[0_0_12px_rgba(34,211,238,0.2)]'
+        return 'bg-neon-cyan/20 border-2 border-neon-cyan text-[#ecfeff] hover:bg-neon-cyan/30 shadow-[0_0_15px_rgba(34,211,238,0.35)]'
     }
   }
 
@@ -459,9 +459,10 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onRefreshProfile }) 
       {/* Right Sidebar Panel (Matching Reference Image) */}
       <div className="w-80 space-y-4 shrink-0">
         {/* Mini Month Calendar Widget */}
-        <RetroCard variant="default">
-          <div className="flex items-center justify-between pb-3 border-b border-border mb-3">
-            <span className="font-mono text-xs font-bold text-foreground">
+        <div className="p-4 bg-card border-2 border-neon-cyan shadow-[0_0_20px_rgba(34,211,238,0.25)] relative">
+          <span className="absolute -top-1 -right-1 w-2 h-2 bg-neon-cyan shadow-[0_0_6px_#22d3ee]" />
+          <div className="flex items-center justify-between pb-3 border-b border-neon-cyan/40 mb-3">
+            <span className="font-mono text-xs font-bold text-neon-cyan uppercase">
               {currentDate.toLocaleDateString('en', { month: 'long', year: 'numeric' })}
             </span>
             <div className="flex space-x-1">
@@ -471,7 +472,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onRefreshProfile }) 
                   d.setMonth(d.getMonth() - 1)
                   setCurrentDate(d)
                 }}
-                className="p-1 hover:text-primary transition-colors"
+                className="p-1 hover:text-neon-cyan transition-colors cursor-pointer"
               >
                 <ChevronLeft className="w-3.5 h-3.5" />
               </button>
@@ -481,7 +482,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onRefreshProfile }) 
                   d.setMonth(d.getMonth() + 1)
                   setCurrentDate(d)
                 }}
-                className="p-1 hover:text-primary transition-colors"
+                className="p-1 hover:text-neon-cyan transition-colors cursor-pointer"
               >
                 <ChevronRight className="w-3.5 h-3.5" />
               </button>
@@ -491,7 +492,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onRefreshProfile }) 
           {/* Mini Calendar Grid */}
           <div className="grid grid-cols-7 gap-1 text-center text-[10px]">
             {['MO', 'DI', 'WO', 'DO', 'VR', 'ZA', 'ZO'].map((day) => (
-              <span key={day} className="text-muted font-bold font-mono py-1">
+              <span key={day} className="text-muted-foreground font-bold font-mono py-1">
                 {day}
               </span>
             ))}
@@ -508,7 +509,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onRefreshProfile }) 
                   }}
                   className={`w-6 h-6 mx-auto flex items-center justify-center font-mono text-xs transition-colors cursor-pointer ${
                     isSelected
-                      ? 'bg-neon-cyan text-black font-bold shadow-[0_0_10px_rgba(34,211,238,0.4)]'
+                      ? 'bg-neon-cyan text-black font-bold shadow-[0_0_12px_rgba(34,211,238,0.5)]'
                       : 'hover:bg-secondary text-foreground'
                   }`}
                 >
@@ -517,12 +518,13 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onRefreshProfile }) 
               )
             })}
           </div>
-        </RetroCard>
+        </div>
 
         {/* Agenda / Categories Filter Checklist */}
-        <RetroCard variant="default" topStripe className="border-t-primary">
-          <div className="flex items-center justify-between pb-2 border-b border-border mb-3">
-            <span className="font-pixel text-[10px] text-foreground">CATEGORIES</span>
+        <div className="p-4 bg-card border-2 border-primary shadow-[0_0_20px_rgba(168,85,247,0.25)] relative">
+          <span className="absolute -top-1 -right-1 w-2 h-2 bg-primary shadow-[0_0_6px_#a855f7]" />
+          <div className="flex items-center justify-between pb-2 border-b border-primary/40 mb-3">
+            <span className="font-pixel text-[10px] text-primary">CATEGORIES</span>
             <RetroButton
               size="sm"
               variant="ghost"
@@ -535,11 +537,11 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onRefreshProfile }) 
 
           <div className="space-y-2 text-xs font-mono">
             {[
-              { id: 'Coding', label: 'Coding & Quests', color: 'bg-neon-cyan' },
-              { id: 'Career', label: 'Career & Projects', color: 'bg-primary' },
-              { id: 'Health', label: 'Health & Habits', color: 'bg-neon-green' },
-              { id: 'Personal', label: 'Personal Mastery', color: 'bg-neon-pink' },
-              { id: 'General', label: 'General & Reviews', color: 'bg-neon-yellow' },
+              { id: 'Coding', label: 'Coding & Quests', color: 'bg-neon-cyan', border: 'border-neon-cyan', text: 'text-neon-cyan' },
+              { id: 'Career', label: 'Career & Projects', color: 'bg-primary', border: 'border-primary', text: 'text-primary' },
+              { id: 'Health', label: 'Health & Habits', color: 'bg-neon-green', border: 'border-neon-green', text: 'text-neon-green' },
+              { id: 'Personal', label: 'Personal Mastery', color: 'bg-neon-pink', border: 'border-neon-pink', text: 'text-neon-pink' },
+              { id: 'General', label: 'General & Reviews', color: 'bg-neon-yellow', border: 'border-neon-yellow', text: 'text-neon-yellow' },
             ].map((cat) => {
               const isChecked = selectedCategories.includes(cat.id)
               return (
@@ -548,8 +550,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onRefreshProfile }) 
                   className="flex items-center justify-between p-1.5 hover:bg-secondary cursor-pointer transition-colors"
                 >
                   <div className="flex items-center space-x-2.5">
-                    <span className={`w-2.5 h-2.5 ${cat.color} border border-black/40`} />
-                    <span className={isChecked ? 'text-foreground font-semibold' : 'text-muted-foreground'}>
+                    <span className={`w-3 h-3 ${cat.color} border ${cat.border} shadow-[0_0_6px_currentColor]`} />
+                    <span className={isChecked ? `${cat.text} font-bold` : 'text-muted-foreground'}>
                       {cat.label}
                     </span>
                   </div>
@@ -569,13 +571,14 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onRefreshProfile }) 
               )
             })}
           </div>
-        </RetroCard>
+        </div>
 
         {/* Upcoming Appointments ("Komende afspraken") */}
-        <RetroCard variant="default" topStripe className="border-t-neon-green">
-          <div className="flex items-center justify-between pb-2 border-b border-border mb-3">
-            <span className="font-pixel text-[10px] text-foreground">UPCOMING MISSIONS</span>
-            <span className="text-[10px] text-neon-cyan font-mono cursor-pointer hover:underline">
+        <div className="p-4 bg-card border-2 border-neon-green shadow-[0_0_20px_rgba(163,230,53,0.25)] relative">
+          <span className="absolute -top-1 -right-1 w-2 h-2 bg-neon-green shadow-[0_0_6px_#a3e635]" />
+          <div className="flex items-center justify-between pb-2 border-b border-neon-green/40 mb-3">
+            <span className="font-pixel text-[10px] text-neon-green">UPCOMING MISSIONS</span>
+            <span className="text-[10px] text-neon-cyan font-mono cursor-pointer hover:underline font-bold">
               [VIEW ALL]
             </span>
           </div>
@@ -625,7 +628,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onRefreshProfile }) 
               Deploy Next Mission
             </RetroButton>
           </div>
-        </RetroCard>
+        </div>
       </div>
 
       {/* Modal / Dialog for New or Edit Mission Timeblock */}

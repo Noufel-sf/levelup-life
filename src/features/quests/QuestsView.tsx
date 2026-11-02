@@ -298,13 +298,25 @@ export const QuestsView: React.FC<QuestsViewProps> = ({ onRefreshProfile }) => {
             const progress = totalCount > 0 ? (completedCount / totalCount) * 100 : 0
             const isCompleted = goal.status === 'COMPLETED'
 
+            const categoryThemes: Record<string, { border: string; bg: string; shadow: string; dot: string; bar: 'cyan' | 'purple' | 'green' | 'pink' | 'gold' }> = {
+              Coding: { border: 'border-neon-cyan', bg: 'bg-neon-cyan/5', shadow: 'shadow-[0_0_20px_rgba(34,211,238,0.25)]', dot: 'bg-neon-cyan', bar: 'cyan' },
+              Career: { border: 'border-primary', bg: 'bg-primary/5', shadow: 'shadow-[0_0_20px_rgba(168,85,247,0.25)]', dot: 'bg-primary', bar: 'purple' },
+              Health: { border: 'border-neon-green', bg: 'bg-neon-green/5', shadow: 'shadow-[0_0_20px_rgba(163,230,53,0.25)]', dot: 'bg-neon-green', bar: 'green' },
+              Personal: { border: 'border-neon-pink', bg: 'bg-neon-pink/5', shadow: 'shadow-[0_0_20px_rgba(236,72,153,0.25)]', dot: 'bg-neon-pink', bar: 'pink' },
+              Finance: { border: 'border-neon-yellow', bg: 'bg-neon-yellow/5', shadow: 'shadow-[0_0_20px_rgba(250,204,21,0.25)]', dot: 'bg-neon-yellow', bar: 'gold' },
+            }
+            const theme = categoryThemes[goal.category] || categoryThemes.Career
+
             return (
-              <RetroCard
+              <div
                 key={goal.id}
-                variant={isCompleted ? 'default' : 'accent-purple'}
-                topStripe
-                className={isCompleted ? 'border-t-neon-green opacity-70 bg-card/60' : 'border-t-primary'}
+                className={`p-5 bg-card border-2 ${theme.border} ${theme.bg} ${theme.shadow} transition-all relative overflow-hidden ${
+                  isCompleted ? 'opacity-70 border-neon-green shadow-[0_0_15px_rgba(163,230,53,0.2)]' : ''
+                }`}
               >
+                {/* Corner accent pixel dot */}
+                <span className={`absolute -top-1 -right-1 w-2.5 h-2.5 ${isCompleted ? 'bg-neon-green' : theme.dot} shadow-[0_0_6px_currentColor]`} />
+
                 {/* Quest Header */}
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-start space-x-3 flex-1">
@@ -367,7 +379,7 @@ export const QuestsView: React.FC<QuestsViewProps> = ({ onRefreshProfile }) => {
                         <RetroProgressBar
                           value={progress}
                           max={100}
-                          variant={isCompleted ? 'green' : 'purple'}
+                          variant={isCompleted ? 'green' : theme.bar}
                         />
                       </div>
                     </div>
@@ -505,7 +517,7 @@ export const QuestsView: React.FC<QuestsViewProps> = ({ onRefreshProfile }) => {
                     </div>
                   </div>
                 )}
-              </RetroCard>
+              </div>
             )
           })
         )}

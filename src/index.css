@@ -65,8 +65,72 @@
 
 /* Dot grid backdrop pattern */
 .grid-pattern {
-  background-image: radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
   background-size: 20px 20px;
+}
+
+/* DEV SCOPE Colorful Card Themes */
+.card-neon-purple {
+  background: rgba(168, 85, 247, 0.08);
+  border: 1px solid rgba(168, 85, 247, 0.4);
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.15);
+}
+.card-neon-purple:hover {
+  border-color: #a855f7;
+  box-shadow: 0 0 25px rgba(168, 85, 247, 0.35);
+}
+
+.card-neon-cyan {
+  background: rgba(34, 211, 238, 0.08);
+  border: 1px solid rgba(34, 211, 238, 0.4);
+  box-shadow: 0 0 20px rgba(34, 211, 238, 0.15);
+}
+.card-neon-cyan:hover {
+  border-color: #22d3ee;
+  box-shadow: 0 0 25px rgba(34, 211, 238, 0.35);
+}
+
+.card-neon-pink {
+  background: rgba(236, 72, 153, 0.08);
+  border: 1px solid rgba(236, 72, 153, 0.4);
+  box-shadow: 0 0 20px rgba(236, 72, 153, 0.15);
+}
+.card-neon-pink:hover {
+  border-color: #ec4899;
+  box-shadow: 0 0 25px rgba(236, 72, 153, 0.35);
+}
+
+.card-neon-green {
+  background: rgba(163, 230, 53, 0.08);
+  border: 1px solid rgba(163, 230, 53, 0.4);
+  box-shadow: 0 0 20px rgba(163, 230, 53, 0.15);
+}
+.card-neon-green:hover {
+  border-color: #a3e635;
+  box-shadow: 0 0 25px rgba(163, 230, 53, 0.35);
+}
+
+.card-neon-yellow {
+  background: rgba(250, 204, 21, 0.08);
+  border: 1px solid rgba(250, 204, 21, 0.4);
+  box-shadow: 0 0 20px rgba(250, 204, 21, 0.15);
+}
+.card-neon-yellow:hover {
+  border-color: #facc15;
+  box-shadow: 0 0 25px rgba(250, 204, 21, 0.35);
+}
+
+/* Radiant animated rainbow border / text */
+.rainbow-gradient {
+  background: linear-gradient(90deg, #a855f7, #22d3ee, #ec4899, #a3e635, #facc15, #a855f7);
+  background-size: 300% 300%;
+  animation: rainbowShift 8s ease infinite;
+}
+
+@keyframes rainbowShift {
+  0% { background-position: 0% 50% }
+  50% { background-position: 100% 50% }
+  100% { background-position: 0% 50% }
 }
 
 /* Cyber card highlight borders */
