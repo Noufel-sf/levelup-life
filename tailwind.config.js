@@ -42,8 +42,9 @@ export default {
         "border-glow": "#795290",
       },
       fontFamily: {
-        pixel: ["'Press Start 2P'", "monospace"],
-        sans: ["'Inter'", "-apple-system", "BlinkMacSystemFont", "sans-serif"],
+        sans: ["'Pixelify Sans'", "'Silkscreen'", "'Press Start 2P'", "monospace"],
+        pixel: ["'Press Start 2P'", "'Pixelify Sans'", "monospace"],
+        arcade: ["'Silkscreen'", "'Pixelify Sans'", "monospace"],
       },
       boxShadow: {
         "pixel-sm": "2px 2px 0px 0px rgba(0, 0, 0, 0.8)",

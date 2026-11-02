@@ -20,7 +20,8 @@
   body {
     background-color: #100B1D;
     color: #F5F0FF;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: 'Pixelify Sans', 'Silkscreen', 'Press Start 2P', monospace;
+    letter-spacing: 0.03em;
   }
 }
 
