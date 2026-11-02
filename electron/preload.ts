@@ -19,7 +19,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getGoals: () => ipcRenderer.invoke('goals:list'),
   createGoal: (data: any) => ipcRenderer.invoke('goals:create', data),
   updateGoal: (id: string, data: any) => ipcRenderer.invoke('goals:update', { id, data }),
+  toggleGoalComplete: (id: string) => ipcRenderer.invoke('goals:toggleComplete', id),
   deleteGoal: (id: string) => ipcRenderer.invoke('goals:delete', id),
+
+  // Milestones
+  createMilestone: (data: any) => ipcRenderer.invoke('milestones:create', data),
+  toggleMilestoneComplete: (id: string) => ipcRenderer.invoke('milestones:toggleComplete', id),
+  deleteMilestone: (id: string) => ipcRenderer.invoke('milestones:delete', id),
 
   // Tasks
   getTasks: (filter?: any) => ipcRenderer.invoke('tasks:list', filter),

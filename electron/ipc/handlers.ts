@@ -85,8 +85,114 @@ export function registerIpcHandlers(mainWindow: BrowserWindow) {
     })
   })
 
+  ipcMain.handle('goals:toggleComplete', async (_, id: string) => {
+    const goal = await prisma.goal.findUnique({
+      where: { id },
+      include: { milestones: true, tasks: true },
+    })
+    if (!goal) throw new Error("Goal not found")
+
+    const willBeCompleted = goal.status !== 'COMPLETED'
+    const newStatus = willBeCompleted ? 'COMPLETED' : 'ACTIVE'
+
+    const updatedGoal = await prisma.goal.update({
+      where: { id },
+      data: { status: newStatus },
+      include: { milestones: { orderBy: { order: 'asc' } }, tasks: true },
+    })
+
+    let updatedProfile = await prisma.userProfile.findFirst({ include: { skills: true } })
+    let xpAwarded = 0
+
+    if (willBeCompleted) {
+      xpAwarded = 100
+      updatedProfile = await XPService.awardXP(
+        xpAwarded,
+        'GOAL',
+        goal.id,
+        `Main Quest Victory: ${goal.title}`
+      )
+    }
+
+    return { goal: updatedGoal, profile: updatedProfile!, xpAwarded }
+  })
+
   ipcMain.handle('goals:delete', async (_, id: string) => {
     await prisma.goal.delete({ where: { id } })
+    return true
+  })
+
+  // Milestones
+  ipcMain.handle('milestones:create', async (_, data) => {
+    const count = await prisma.milestone.count({ where: { goalId: data.goalId } })
+    return await prisma.milestone.create({
+      data: {
+        goalId: data.goalId,
+        title: data.title,
+        description: data.description || null,
+        order: count + 1,
+        xpReward: data.xpReward || 50,
+        status: 'PENDING',
+      },
+    })
+  })
+
+  ipcMain.handle('milestones:toggleComplete', async (_, id: string) => {
+    const milestone = await prisma.milestone.findUnique({
+      where: { id },
+      include: { goal: { include: { milestones: true } } },
+    })
+    if (!milestone) throw new Error("Milestone not found")
+
+    const willBeCompleted = milestone.status !== 'COMPLETED'
+    const newStatus = willBeCompleted ? 'COMPLETED' : 'PENDING'
+
+    const updatedMilestone = await prisma.milestone.update({
+      where: { id },
+      data: {
+        status: newStatus,
+        completedAt: willBeCompleted ? new Date() : null,
+      },
+    })
+
+    let updatedProfile = await prisma.userProfile.findFirst({ include: { skills: true } })
+    let xpAwarded = 0
+    let goalCompleted = false
+
+    if (willBeCompleted) {
+      xpAwarded = milestone.xpReward
+      updatedProfile = await XPService.awardXP(
+        xpAwarded,
+        'MILESTONE',
+        milestone.id,
+        `Completed Milestone: ${milestone.title}`
+      )
+
+      // Check if all milestones in the goal are now completed
+      const allMilestones = await prisma.milestone.findMany({ where: { goalId: milestone.goalId } })
+      const allDone = allMilestones.length > 0 && allMilestones.every((m: any) => m.status === 'COMPLETED')
+      if (allDone && milestone.goal.status !== 'COMPLETED') {
+        goalCompleted = true
+        await prisma.goal.update({
+          where: { id: milestone.goalId },
+          data: { status: 'COMPLETED' },
+        })
+        const goalBonusXp = 100
+        xpAwarded += goalBonusXp
+        updatedProfile = await XPService.awardXP(
+          goalBonusXp,
+          'GOAL',
+          milestone.goalId,
+          `Conquered Main Quest: ${milestone.goal.title}`
+        )
+      }
+    }
+
+    return { milestone: updatedMilestone, profile: updatedProfile!, xpAwarded, goalCompleted }
+  })
+
+  ipcMain.handle('milestones:delete', async (_, id: string) => {
+    await prisma.milestone.delete({ where: { id } })
     return true
   })
 

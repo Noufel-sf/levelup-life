@@ -39,7 +39,7 @@ export function App() {
       case 'planner':
         return <PlannerView />
       case 'quests':
-        return <QuestsView />
+        return <QuestsView onRefreshProfile={refreshProfile} />
       case 'habits':
         return <HabitsView />
       case 'progress':

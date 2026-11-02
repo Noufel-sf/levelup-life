@@ -123,7 +123,13 @@ export interface ElectronAPI {
   getGoals: () => Promise<GoalDTO[]>
   createGoal: (data: Partial<GoalDTO>) => Promise<GoalDTO>
   updateGoal: (id: string, data: Partial<GoalDTO>) => Promise<GoalDTO>
+  toggleGoalComplete: (id: string) => Promise<{ goal: GoalDTO; profile: UserProfileDTO; xpAwarded: number }>
   deleteGoal: (id: string) => Promise<boolean>
+
+  // Milestones
+  createMilestone: (data: { goalId: string; title: string; description?: string; xpReward?: number }) => Promise<MilestoneDTO>
+  toggleMilestoneComplete: (id: string) => Promise<{ milestone: MilestoneDTO; profile: UserProfileDTO; xpAwarded: number; goalCompleted?: boolean }>
+  deleteMilestone: (id: string) => Promise<boolean>
 
   // Tasks / Missions
   getTasks: (filter?: { scheduledDate?: string; status?: string }) => Promise<TaskDTO[]>
