@@ -54,7 +54,10 @@ export function App() {
   }
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-background text-foreground overflow-hidden">
+    <div className="flex flex-col h-screen w-screen bg-background text-foreground overflow-hidden selection:bg-primary/30 selection:text-neon-cyan relative">
+      {/* DEV SCOPE Scanlines Overlay */}
+      <div className="scanlines fixed inset-0 z-50 pointer-events-none opacity-20" />
+
       {/* Custom Desktop Title Bar */}
       <WindowFrame />
 
@@ -62,8 +65,8 @@ export function App() {
       <div className="flex flex-1 overflow-hidden relative">
         <Sidebar currentTab={currentTab} onSelectTab={setCurrentTab} profile={profile} />
 
-        {/* Scrollable Content View */}
-        <main className="flex-1 overflow-y-auto p-6 relative">
+        {/* Scrollable Content View with ambient grid */}
+        <main className="flex-1 overflow-y-auto p-6 relative grid-pattern">
           <div className="max-w-6xl mx-auto">{renderContent()}</div>
         </main>
       </div>

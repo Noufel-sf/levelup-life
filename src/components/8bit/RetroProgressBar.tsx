@@ -23,34 +23,34 @@ export const RetroProgressBar: React.FC<RetroProgressBarProps> = ({
   const percentage = Math.min(100, Math.max(0, (value / max) * 100))
 
   const fillColors = {
-    purple: "bg-primary border-r-2 border-[#D8B4FE]",
-    pink: "bg-arcade-pink border-r-2 border-[#FBCFE8]",
-    cyan: "bg-cyber-cyan border-r-2 border-[#A5F3FC]",
-    green: "bg-terminal-green border-r-2 border-[#BBF7D0]",
-    gold: "bg-caution-amber border-r-2 border-[#FEF08A]",
+    purple: "bg-primary shadow-[0_0_10px_rgba(168,85,247,0.5)]",
+    pink: "bg-neon-pink shadow-[0_0_10px_rgba(236,72,153,0.5)]",
+    cyan: "bg-neon-cyan shadow-[0_0_10px_rgba(34,211,238,0.5)]",
+    green: "bg-neon-green shadow-[0_0_10px_rgba(163,230,53,0.5)]",
+    gold: "bg-neon-yellow shadow-[0_0_10px_rgba(250,204,21,0.5)]",
   }
 
   return (
     <div className={cn("w-full space-y-1.5", className)} {...props}>
       {showLabel && (
-        <div className="flex justify-between text-[11px] font-medium text-muted">
+        <div className="flex justify-between text-[11px] font-mono font-medium text-muted-foreground">
           <span>{label}</span>
-          <span className="font-pixel text-[9px] text-foreground">
+          <span className="font-mono text-neon-cyan">
             {Math.round(value)}/{max} ({Math.round(percentage)}%)
           </span>
         </div>
       )}
-      <div className="relative h-4 w-full bg-[#100B1D] border-2 border-border p-0.5 overflow-hidden shadow-pixel-sm">
+      <div className="relative h-3 w-full bg-background border border-border p-0.5 overflow-hidden">
         <div
           className={cn("h-full transition-all duration-300 relative", fillColors[variant])}
           style={{ width: `${percentage}%` }}
         >
           {showSegments && (
             <div
-              className="absolute inset-0 w-full h-full opacity-30"
+              className="absolute inset-0 w-full h-full opacity-25"
               style={{
                 backgroundImage:
-                  "repeating-linear-gradient(90deg, transparent, transparent 4px, rgba(0,0,0,0.8) 4px, rgba(0,0,0,0.8) 6px)",
+                  "repeating-linear-gradient(90deg, transparent, transparent 3px, rgba(0,0,0,0.9) 3px, rgba(0,0,0,0.9) 5px)",
               }}
             />
           )}
@@ -59,4 +59,3 @@ export const RetroProgressBar: React.FC<RetroProgressBarProps> = ({
     </div>
   )
 }
-

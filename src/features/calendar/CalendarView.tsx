@@ -185,24 +185,24 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onRefreshProfile }) 
     loadData()
   }
 
-  // Get color styles for events
+  // Get color styles for events matching DEV SCOPE styling
   const getColorStyles = (color?: string | null, isCompleted?: boolean) => {
     if (isCompleted) {
-      return 'bg-terminal-green/15 border-terminal-green text-terminal-green line-through opacity-75'
+      return 'bg-secondary/40 border border-border/40 text-muted-foreground line-through opacity-60'
     }
     switch (color) {
       case 'purple':
-        return 'bg-primary/20 border-primary text-[#E9D5FF] shadow-pixel-purple'
+        return 'bg-primary/15 border border-primary/60 text-foreground hover:border-primary shadow-[0_0_12px_rgba(168,85,247,0.2)]'
       case 'pink':
-        return 'bg-arcade-pink/20 border-arcade-pink text-[#FCE7F3] shadow-pixel-pink'
+        return 'bg-neon-pink/15 border border-neon-pink/60 text-foreground hover:border-neon-pink shadow-[0_0_12px_rgba(236,72,153,0.2)]'
       case 'amber':
       case 'yellow':
-        return 'bg-caution-amber/20 border-caution-amber text-[#FEF9C3]'
+        return 'bg-neon-yellow/15 border border-neon-yellow/60 text-foreground hover:border-neon-yellow shadow-[0_0_12px_rgba(250,204,21,0.2)]'
       case 'green':
-        return 'bg-terminal-green/20 border-terminal-green text-[#DCFCE7]'
+        return 'bg-neon-green/15 border border-neon-green/60 text-foreground hover:border-neon-green shadow-[0_0_12px_rgba(163,230,53,0.2)]'
       case 'cyan':
       default:
-        return 'bg-cyber-cyan/20 border-cyber-cyan text-[#CFFAFE] shadow-pixel-cyan'
+        return 'bg-neon-cyan/15 border border-neon-cyan/60 text-foreground hover:border-neon-cyan shadow-[0_0_12px_rgba(34,211,238,0.2)]'
     }
   }
 
@@ -233,13 +233,13 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onRefreshProfile }) 
       {/* Main Calendar View Area */}
       <div className="flex-1 space-y-4">
         {/* Top Header Controls Bar */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-card border-2 border-border p-4 shadow-pixel-md">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-card border border-border border-t-2 border-t-primary p-4 shadow-[0_0_20px_rgba(168,85,247,0.12)]">
           <div>
             <div className="flex items-center space-x-2">
               <CalendarIcon className="w-5 h-5 text-primary" />
               <h1 className="font-pixel text-sm text-foreground tracking-wide">MISSION CALENDAR</h1>
             </div>
-            <p className="text-xs text-muted mt-0.5">
+            <p className="text-xs text-muted-foreground mt-0.5 font-mono">
               Manage timeblocks, milestones, and daily mission deployment.
             </p>
           </div>
@@ -247,15 +247,15 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onRefreshProfile }) 
           {/* Action & View Switchers */}
           <div className="flex flex-wrap items-center gap-2.5">
             {/* View Mode Tabs */}
-            <div className="flex bg-[#100B1D] border-2 border-border p-0.5 shadow-pixel-sm">
+            <div className="flex bg-secondary border border-border p-0.5">
               {(['day', 'week', 'month', 'agenda'] as ViewMode[]).map((mode) => (
                 <button
                   key={mode}
                   onClick={() => setViewMode(mode)}
-                  className={`px-3 py-1 text-xs font-semibold uppercase tracking-wider transition-all ${
+                  className={`px-3 py-1 text-xs font-mono font-semibold uppercase tracking-wider transition-all cursor-pointer ${
                     viewMode === mode
-                      ? 'bg-elevated text-primary border border-primary/50 shadow-sm'
-                      : 'text-muted hover:text-foreground'
+                      ? 'bg-primary/20 text-neon-cyan border border-neon-cyan/50 shadow-[0_0_10px_rgba(34,211,238,0.25)]'
+                      : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
                   {mode}
@@ -265,7 +265,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onRefreshProfile }) 
 
             {/* New Event Button */}
             <RetroButton
-              variant="primary"
+              variant="cyan"
               size="sm"
               pixelFont
               onClick={() => openNewEventModal()}
@@ -277,22 +277,22 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onRefreshProfile }) 
         </div>
 
         {/* Date Navigation & Range Selector */}
-        <div className="flex items-center justify-between bg-card/60 border-2 border-border px-4 py-2.5 shadow-pixel-sm">
+        <div className="flex items-center justify-between bg-card border border-border px-4 py-2.5 shadow-sm">
           <div className="flex items-center space-x-2">
             <RetroButton variant="secondary" size="sm" onClick={handleToday}>
               Today
             </RetroButton>
-            <div className="flex items-center border border-border bg-elevated">
+            <div className="flex items-center border border-border bg-secondary">
               <button
                 onClick={handlePrev}
-                className="p-1 hover:text-primary transition-colors border-r border-border"
+                className="p-1 hover:text-neon-cyan transition-colors border-r border-border cursor-pointer"
                 title="Previous"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <button
                 onClick={handleNext}
-                className="p-1 hover:text-primary transition-colors"
+                className="p-1 hover:text-neon-cyan transition-colors cursor-pointer"
                 title="Next"
               >
                 <ChevronRight className="w-4 h-4" />
@@ -304,18 +304,18 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onRefreshProfile }) 
           </div>
 
           <div className="flex items-center space-x-2">
-            <span className="text-[10px] font-mono text-muted bg-[#100B1D] px-2 py-1 border border-border">
+            <span className="text-[10px] font-mono text-muted-foreground bg-secondary px-2 py-1 border border-border">
               GMT {now.getTimezoneOffset() > 0 ? '-' : '+'}{Math.abs(now.getTimezoneOffset() / 60)}
             </span>
           </div>
         </div>
 
         {/* 7-Day Week Grid */}
-        <div className="bg-card border-2 border-border shadow-pixel-md overflow-x-auto relative">
+        <div className="bg-card border border-border shadow-[0_0_20px_rgba(0,0,0,0.5)] overflow-x-auto relative">
           {/* Header Row: Days of Week */}
-          <div className="grid grid-cols-8 border-b-2 border-border bg-secondary-bg text-center sticky top-0 z-20">
+          <div className="grid grid-cols-8 border-b border-border bg-secondary/80 text-center sticky top-0 z-20">
             {/* GMT Column */}
-            <div className="p-3 border-r-2 border-border text-[10px] font-mono text-muted flex items-center justify-center">
+            <div className="p-3 border-r border-border text-[10px] font-mono text-muted-foreground flex items-center justify-center">
               TIME
             </div>
 
@@ -329,14 +329,14 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onRefreshProfile }) 
               return (
                 <div
                   key={index}
-                  className={`p-2.5 border-r border-border/80 transition-colors ${
+                  className={`p-2.5 border-r border-border/70 transition-colors ${
                     isToday ? 'bg-primary/10' : ''
                   }`}
                 >
-                  <p className="text-[11px] font-bold text-muted uppercase">{dayName}</p>
+                  <p className="text-[11px] font-mono font-bold text-muted-foreground uppercase">{dayName}</p>
                   <div className="mt-1 flex justify-center">
                     {isToday ? (
-                      <span className="w-7 h-7 rounded-full bg-cyber-cyan text-[#100B1D] font-bold font-mono text-xs flex items-center justify-center shadow-pixel-cyan animate-pulse">
+                      <span className="w-7 h-7 rounded-full bg-neon-cyan text-black font-bold font-mono text-xs flex items-center justify-center shadow-[0_0_12px_rgba(34,211,238,0.5)] animate-pulse">
                         {d.getDate()}
                       </span>
                     ) : (
@@ -358,16 +358,16 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onRefreshProfile }) 
                 className="absolute left-0 right-0 z-30 pointer-events-none flex items-center"
                 style={{ top: `${laserTopPercentage}%` }}
               >
-                <div className="w-2.5 h-2.5 rounded-full bg-arcade-pink shadow-glow-pink animate-ping ml-1" />
-                <div className="flex-1 h-[2px] bg-arcade-pink shadow-glow-pink" />
+                <div className="w-2.5 h-2.5 rounded-full bg-neon-pink shadow-[0_0_10px_#ec4899] animate-ping ml-1" />
+                <div className="flex-1 h-[2px] bg-neon-pink shadow-[0_0_10px_#ec4899]" />
               </div>
             )}
 
             {/* Rows for each hour */}
             {hours.map((hour, hIdx) => (
-              <div key={hour} className="grid grid-cols-8 border-b border-border/50 min-h-[52px]">
+              <div key={hour} className="grid grid-cols-8 border-b border-border/40 min-h-[52px]">
                 {/* Time Label Column */}
-                <div className="p-2 border-r-2 border-border text-[10px] font-mono text-muted flex items-start justify-center bg-secondary-bg/50">
+                <div className="p-2 border-r border-border text-[10px] font-mono text-muted-foreground flex items-start justify-center bg-secondary/40">
                   {hour}
                 </div>
 
@@ -384,11 +384,11 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onRefreshProfile }) 
                     <div
                       key={dIdx}
                       onClick={() => openNewEventModal(dayStr, hour)}
-                      className="p-1 border-r border-border/40 hover:bg-elevated/40 transition-colors relative group cursor-pointer"
+                      className="p-1 border-r border-border/30 hover:bg-secondary/40 transition-colors relative group cursor-pointer"
                     >
                       {/* Plus icon on hover */}
                       <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-60 transition-opacity">
-                        <Plus className="w-3 h-3 text-muted" />
+                        <Plus className="w-3 h-3 text-muted-foreground" />
                       </div>
 
                       {/* Render scheduled timeblocks */}
@@ -410,7 +410,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onRefreshProfile }) 
                               setFormXp(task.xpReward)
                               setIsModalOpen(true)
                             }}
-                            className={`p-2 border-2 mb-1.5 transition-all text-left relative z-10 ${getColorStyles(
+                            className={`p-2 border mb-1.5 transition-all text-left relative z-10 ${getColorStyles(
                               task.color,
                               isDone
                             )}`}
@@ -426,21 +426,21 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onRefreshProfile }) 
                               >
                                 <CheckCircle2
                                   className={`w-3.5 h-3.5 ${
-                                    isDone ? 'text-terminal-green' : 'text-muted hover:text-white'
+                                    isDone ? 'text-neon-green' : 'text-muted-foreground hover:text-white'
                                   }`}
                                 />
                               </button>
                             </div>
 
-                            <p className="text-xs font-bold leading-tight line-clamp-2">
+                            <p className="text-xs font-mono font-bold leading-tight line-clamp-2">
                               {task.title}
                             </p>
 
-                            <div className="flex items-center justify-between mt-1 pt-1 border-t border-white/10 text-[9px]">
+                            <div className="flex items-center justify-between mt-1 pt-1 border-t border-white/10 text-[9px] font-mono">
                               <span className="truncate opacity-80">
                                 {task.goal?.title || 'Daily Mission'}
                               </span>
-                              <span className="font-pixel text-[7px] shrink-0 font-bold">
+                              <span className="font-pixel text-[7px] shrink-0 font-bold text-neon-cyan">
                                 +{task.xpReward}XP
                               </span>
                             </div>
@@ -506,10 +506,10 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onRefreshProfile }) 
                     d.setDate(dayNum)
                     setCurrentDate(d)
                   }}
-                  className={`w-6 h-6 mx-auto flex items-center justify-center font-mono transition-colors ${
+                  className={`w-6 h-6 mx-auto flex items-center justify-center font-mono text-xs transition-colors cursor-pointer ${
                     isSelected
-                      ? 'bg-cyber-cyan text-[#100B1D] font-bold shadow-pixel-cyan'
-                      : 'hover:bg-elevated text-foreground'
+                      ? 'bg-neon-cyan text-black font-bold shadow-[0_0_10px_rgba(34,211,238,0.4)]'
+                      : 'hover:bg-secondary text-foreground'
                   }`}
                 >
                   {dayNum}
@@ -520,7 +520,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onRefreshProfile }) 
         </RetroCard>
 
         {/* Agenda / Categories Filter Checklist */}
-        <RetroCard variant="default">
+        <RetroCard variant="default" topStripe className="border-t-primary">
           <div className="flex items-center justify-between pb-2 border-b border-border mb-3">
             <span className="font-pixel text-[10px] text-foreground">CATEGORIES</span>
             <RetroButton
@@ -533,23 +533,23 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onRefreshProfile }) 
             </RetroButton>
           </div>
 
-          <div className="space-y-2 text-xs">
+          <div className="space-y-2 text-xs font-mono">
             {[
-              { id: 'Coding', label: 'Coding & Quests', color: 'bg-cyber-cyan' },
+              { id: 'Coding', label: 'Coding & Quests', color: 'bg-neon-cyan' },
               { id: 'Career', label: 'Career & Projects', color: 'bg-primary' },
-              { id: 'Health', label: 'Health & Habits', color: 'bg-terminal-green' },
-              { id: 'Personal', label: 'Personal Mastery', color: 'bg-arcade-pink' },
-              { id: 'General', label: 'General & Reviews', color: 'bg-caution-amber' },
+              { id: 'Health', label: 'Health & Habits', color: 'bg-neon-green' },
+              { id: 'Personal', label: 'Personal Mastery', color: 'bg-neon-pink' },
+              { id: 'General', label: 'General & Reviews', color: 'bg-neon-yellow' },
             ].map((cat) => {
               const isChecked = selectedCategories.includes(cat.id)
               return (
                 <label
                   key={cat.id}
-                  className="flex items-center justify-between p-1.5 hover:bg-elevated/60 cursor-pointer transition-colors"
+                  className="flex items-center justify-between p-1.5 hover:bg-secondary cursor-pointer transition-colors"
                 >
                   <div className="flex items-center space-x-2.5">
                     <span className={`w-2.5 h-2.5 ${cat.color} border border-black/40`} />
-                    <span className={isChecked ? 'text-foreground font-semibold' : 'text-muted'}>
+                    <span className={isChecked ? 'text-foreground font-semibold' : 'text-muted-foreground'}>
                       {cat.label}
                     </span>
                   </div>
@@ -563,7 +563,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onRefreshProfile }) 
                         setSelectedCategories([...selectedCategories, cat.id])
                       }
                     }}
-                    className="accent-primary"
+                    className="accent-primary cursor-pointer"
                   />
                 </label>
               )
@@ -572,15 +572,15 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onRefreshProfile }) 
         </RetroCard>
 
         {/* Upcoming Appointments ("Komende afspraken") */}
-        <RetroCard variant="default">
+        <RetroCard variant="default" topStripe className="border-t-neon-green">
           <div className="flex items-center justify-between pb-2 border-b border-border mb-3">
             <span className="font-pixel text-[10px] text-foreground">UPCOMING MISSIONS</span>
-            <span className="text-[10px] text-primary font-mono cursor-pointer hover:underline">
-              View All
+            <span className="text-[10px] text-neon-cyan font-mono cursor-pointer hover:underline">
+              [VIEW ALL]
             </span>
           </div>
 
-          <div className="space-y-2.5">
+          <div className="space-y-2">
             {filteredTasks.slice(0, 5).map((task) => (
               <div
                 key={task.id}
@@ -596,13 +596,13 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onRefreshProfile }) 
                   setFormXp(task.xpReward)
                   setIsModalOpen(true)
                 }}
-                className="p-2.5 bg-elevated border border-border hover:border-primary transition-all cursor-pointer shadow-pixel-sm"
+                className="p-2.5 bg-secondary border border-border hover:border-neon-cyan/70 transition-all cursor-pointer shadow-sm"
               >
                 <div className="flex items-center space-x-2 mb-1">
-                  <span className="w-2 h-2 rounded-full bg-cyber-cyan shadow-pixel-cyan" />
-                  <span className="text-xs font-bold text-foreground truncate">{task.title}</span>
+                  <span className="w-2 h-2 rounded-full bg-neon-cyan shadow-[0_0_6px_#22d3ee]" />
+                  <span className="text-xs font-mono font-bold text-foreground truncate">{task.title}</span>
                 </div>
-                <div className="flex items-center justify-between text-[10px] text-muted font-mono">
+                <div className="flex items-center justify-between text-[10px] text-muted-foreground font-mono">
                   <span>
                     {task.scheduledDate} {task.startTime || '09:00'}
                   </span>
@@ -630,8 +630,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onRefreshProfile }) 
 
       {/* Modal / Dialog for New or Edit Mission Timeblock */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-          <div className="w-full max-w-md bg-card border-2 border-[#D8B4FE] shadow-pixel-purple p-6 relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md bg-card border border-border border-t-2 border-t-neon-cyan shadow-[0_0_30px_rgba(34,211,238,0.25)] p-6 relative">
             <button
               onClick={() => setIsModalOpen(false)}
               className="absolute top-4 right-4 text-muted hover:text-foreground"
@@ -700,11 +700,11 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onRefreshProfile }) 
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-muted mb-1">Theme Color</label>
+                  <label className="block text-xs font-mono font-semibold text-muted-foreground mb-1">Theme Color</label>
                   <select
                     value={formColor}
                     onChange={(e) => setFormColor(e.target.value)}
-                    className="w-full bg-[#100B1D] border-2 border-border px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-none"
+                    className="w-full bg-secondary border border-border px-3 py-2 text-xs text-foreground focus:border-neon-cyan focus:outline-none font-mono"
                   >
                     <option value="cyan">Cyber Cyan (Focus / Coding)</option>
                     <option value="purple">Vapor Purple (Main Quest)</option>
@@ -715,11 +715,11 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onRefreshProfile }) 
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-muted mb-1">Associated Goal</label>
+                  <label className="block text-xs font-mono font-semibold text-muted-foreground mb-1">Associated Goal</label>
                   <select
                     value={formGoalId}
                     onChange={(e) => setFormGoalId(e.target.value)}
-                    className="w-full bg-[#100B1D] border-2 border-border px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-none"
+                    className="w-full bg-secondary border border-border px-3 py-2 text-xs text-foreground focus:border-neon-cyan focus:outline-none font-mono"
                   >
                     <option value="">None (Independent Mission)</option>
                     {goals.map((g) => (
