@@ -23,6 +23,7 @@ async function createWindow() {
     frame: false, // Custom retro title bar
     titleBarStyle: 'hidden',
     backgroundColor: '#100B1D',
+    icon: path.join(__dirname, '../public/logo.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,

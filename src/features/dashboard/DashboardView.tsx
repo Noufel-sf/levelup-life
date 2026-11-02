@@ -112,21 +112,26 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ profile, onRefresh
       {/* Header / Welcome Section */}
       <div className="relative p-6 bg-gradient-to-r from-card via-elevated to-secondary-bg border-2 border-border shadow-pixel-md overflow-hidden">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center space-x-2 text-arcade-pink text-xs font-mono font-bold mb-1">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>
-                {new Date().toLocaleDateString(undefined, {
-                  weekday: 'long',
-                  month: 'short',
-                  day: 'numeric',
-                })}
-              </span>
+          <div className="flex items-center space-x-4">
+            <div className="w-16 h-16 bg-[#100B1D] border-2 border-primary shadow-pixel-purple p-1 shrink-0 flex items-center justify-center">
+              <img src="/logo.png" alt="LIFE OS" className="w-full h-full object-contain" />
             </div>
-            <h2 className="text-2xl font-bold tracking-tight text-foreground">{getGreeting()}</h2>
-            <p className="text-xs text-muted mt-1">
-              "Every completed mission shapes the hero you become. Level up your reality."
-            </p>
+            <div>
+              <div className="flex items-center space-x-2 text-arcade-pink text-xs font-mono font-bold mb-1">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>
+                  {new Date().toLocaleDateString(undefined, {
+                    weekday: 'long',
+                    month: 'short',
+                    day: 'numeric',
+                  })}
+                </span>
+              </div>
+              <h2 className="text-2xl font-bold tracking-tight text-foreground">{getGreeting()}</h2>
+              <p className="text-xs text-muted mt-1">
+                "Every completed mission shapes the hero you become. Level up your reality."
+              </p>
+            </div>
           </div>
 
           <div className="flex items-center space-x-3 bg-[#100B1D]/80 p-3 border border-border shadow-pixel-sm">

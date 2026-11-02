@@ -20,7 +20,11 @@ export const WindowFrame: React.FC = () => {
   return (
     <div className="h-8 bg-[#100B1D] border-b-2 border-border flex items-center justify-between select-none px-3 z-50 relative app-drag-region">
       <div className="flex items-center space-x-2 no-drag">
-        <Terminal className="w-4 h-4 text-primary animate-pulse" />
+        <img
+          src="/logo.png"
+          alt="LIFE OS"
+          className="w-4 h-4 object-contain shadow-pixel-sm rounded-sm"
+        />
         <span className="font-pixel text-[10px] text-foreground tracking-wider">
           LIFE OS <span className="text-arcade-pink">//</span> v0.1.0
         </span>

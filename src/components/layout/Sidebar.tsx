@@ -44,9 +44,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab, profi
       <div className="p-4 space-y-6">
         {/* App Title / Logo */}
         <div className="space-y-1">
-          <div className="flex items-center space-x-2">
-            <div className="w-7 h-7 bg-primary flex items-center justify-center border-2 border-[#D8B4FE] shadow-pixel-sm">
-              <Sparkles className="w-4 h-4 text-white" />
+          <div className="flex items-center space-x-2.5">
+            <div className="w-9 h-9 bg-elevated flex items-center justify-center border-2 border-primary shadow-pixel-purple overflow-hidden p-0.5">
+              <img src="/logo.png" alt="LIFE OS" className="w-full h-full object-contain" />
             </div>
             <div>
               <h1 className="font-pixel text-[13px] text-foreground tracking-wider">
@@ -61,8 +61,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab, profi
         <div className="p-3 bg-card border-2 border-border shadow-pixel-sm relative overflow-hidden">
           <div className="flex items-center space-x-3 mb-2.5">
             <div className="relative">
-              <div className="w-10 h-10 bg-elevated border-2 border-primary flex items-center justify-center shadow-pixel-sm">
-                <Shield className="w-5 h-5 text-cyber-cyan" />
+              <div className="w-10 h-10 bg-elevated border-2 border-primary flex items-center justify-center shadow-pixel-sm overflow-hidden p-0.5">
+                <img src="/logo.png" alt="Avatar" className="w-full h-full object-contain" />
               </div>
               <div className="absolute -bottom-1 -right-1">
                 <RetroBadge variant="pink" pixelFont>
