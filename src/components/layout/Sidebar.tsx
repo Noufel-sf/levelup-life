@@ -2,6 +2,7 @@ import React from 'react'
 import {
   LayoutDashboard,
   Calendar,
+  Clock,
   Sword,
   Zap,
   TrendingUp,
@@ -14,7 +15,7 @@ import { RetroProgressBar } from '../8bit/RetroProgressBar'
 import { RetroBadge } from '../8bit/RetroBadge'
 import { UserProfileDTO } from '@/types/ipc'
 
-export type NavTab = 'dashboard' | 'planner' | 'quests' | 'habits' | 'progress' | 'ai' | 'settings'
+export type NavTab = 'dashboard' | 'calendar' | 'planner' | 'quests' | 'habits' | 'progress' | 'ai' | 'settings'
 
 interface SidebarProps {
   currentTab: NavTab
@@ -25,7 +26,8 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab, profile }) => {
   const navItems = [
     { id: 'dashboard' as NavTab, label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'planner' as NavTab, label: 'Planner', icon: Calendar },
+    { id: 'calendar' as NavTab, label: 'Calendar', icon: Calendar, badge: 'GRID' },
+    { id: 'planner' as NavTab, label: 'Planner', icon: Clock },
     { id: 'quests' as NavTab, label: 'Quests', icon: Sword },
     { id: 'habits' as NavTab, label: 'Habits', icon: Zap },
     { id: 'progress' as NavTab, label: 'Progress', icon: TrendingUp },

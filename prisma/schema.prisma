@@ -94,6 +94,9 @@ model Task {
   difficulty    String         @default("MEDIUM")
   estimatedMin  Int?           @default(30)
   scheduledDate String?
+  startTime     String?        // e.g. "09:00"
+  endTime       String?        // e.g. "10:00"
+  color         String?        @default("cyan")
   dueDateTime   DateTime?
   xpReward      Int            @default(20)
   status        String         @default("TODO")

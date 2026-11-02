@@ -24,6 +24,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Tasks
   getTasks: (filter?: any) => ipcRenderer.invoke('tasks:list', filter),
   createTask: (data: any) => ipcRenderer.invoke('tasks:create', data),
+  updateTask: (id: string, data: any) => ipcRenderer.invoke('tasks:update', { id, data }),
   toggleTaskComplete: (id: string) => ipcRenderer.invoke('tasks:toggleComplete', id),
   deleteTask: (id: string) => ipcRenderer.invoke('tasks:delete', id),
 

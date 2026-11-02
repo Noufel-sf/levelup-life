@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { WindowFrame } from './components/layout/WindowFrame'
 import { Sidebar, NavTab } from './components/layout/Sidebar'
 import { DashboardView } from './features/dashboard/DashboardView'
+import { CalendarView } from './features/calendar/CalendarView'
 import { PlannerView } from './features/planner/PlannerView'
 import { QuestsView } from './features/quests/QuestsView'
 import { HabitsView } from './features/habits/HabitsView'
@@ -33,6 +34,8 @@ export function App() {
     switch (currentTab) {
       case 'dashboard':
         return <DashboardView profile={profile} onRefreshProfile={refreshProfile} />
+      case 'calendar':
+        return <CalendarView onRefreshProfile={refreshProfile} />
       case 'planner':
         return <PlannerView />
       case 'quests':

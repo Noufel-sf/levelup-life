@@ -123,9 +123,23 @@ export function registerIpcHandlers(mainWindow: BrowserWindow) {
         difficulty: data.difficulty || 'MEDIUM',
         estimatedMin: data.estimatedMin || 30,
         scheduledDate: data.scheduledDate || new Date().toISOString().split('T')[0],
+        startTime: data.startTime || null,
+        endTime: data.endTime || null,
+        color: data.color || 'cyan',
         xpReward: data.xpReward || 20,
         status: 'TODO',
       },
+      include: {
+        goal: { select: { id: true, title: true, category: true } },
+        skill: { select: { id: true, name: true, color: true } },
+      },
+    })
+  })
+
+  ipcMain.handle('tasks:update', async (_, { id, data }) => {
+    return await prisma.task.update({
+      where: { id },
+      data,
       include: {
         goal: { select: { id: true, title: true, category: true } },
         skill: { select: { id: true, name: true, color: true } },

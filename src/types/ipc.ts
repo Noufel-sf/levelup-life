@@ -69,6 +69,9 @@ export interface TaskDTO {
   difficulty: string
   estimatedMin?: number | null
   scheduledDate?: string | null
+  startTime?: string | null
+  endTime?: string | null
+  color?: string | null
   dueDateTime?: string | null
   xpReward: number
   status: string
@@ -125,6 +128,7 @@ export interface ElectronAPI {
   // Tasks / Missions
   getTasks: (filter?: { scheduledDate?: string; status?: string }) => Promise<TaskDTO[]>
   createTask: (data: Partial<TaskDTO>) => Promise<TaskDTO>
+  updateTask: (id: string, data: Partial<TaskDTO>) => Promise<TaskDTO>
   toggleTaskComplete: (id: string) => Promise<{ task: TaskDTO; profile: UserProfileDTO; xpAwarded: number }>
   deleteTask: (id: string) => Promise<boolean>
 

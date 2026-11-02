@@ -69,6 +69,72 @@ export async function initializeDatabase() {
         include: { skills: true },
       })
     }
+
+    // Seed initial schedule samples if empty
+    const taskCount = await prisma.task.count()
+    if (taskCount === 0) {
+      const today = new Date()
+      const getOffsetDate = (offsetDays: number) => {
+        const d = new Date(today)
+        d.setDate(d.getDate() + offsetDays)
+        return d.toISOString().split('T')[0]
+      }
+
+      await prisma.task.createMany({
+        data: [
+          {
+            title: 'Team Stand-up & Daily Sprint',
+            scheduledDate: getOffsetDate(0),
+            startTime: '09:00',
+            endTime: '10:00',
+            color: 'cyan',
+            type: 'DAILY_MISSION',
+            xpReward: 20,
+            status: 'TODO',
+          },
+          {
+            title: 'Planning & Taken: Architecture Review',
+            scheduledDate: getOffsetDate(0),
+            startTime: '10:00',
+            endTime: '11:00',
+            color: 'purple',
+            type: 'DAILY_MISSION',
+            xpReward: 25,
+            status: 'TODO',
+          },
+          {
+            title: 'API Integration & Security Audit',
+            scheduledDate: getOffsetDate(1),
+            startTime: '11:00',
+            endTime: '12:30',
+            color: 'purple',
+            type: 'DAILY_MISSION',
+            xpReward: 35,
+            status: 'TODO',
+          },
+          {
+            title: 'Product Demo & Stakeholder Feedback',
+            scheduledDate: getOffsetDate(2),
+            startTime: '14:00',
+            endTime: '15:30',
+            color: 'amber',
+            type: 'DAILY_MISSION',
+            xpReward: 30,
+            status: 'TODO',
+          },
+          {
+            title: 'Health Protocol: Workout & Mobility',
+            scheduledDate: getOffsetDate(0),
+            startTime: '17:00',
+            endTime: '18:00',
+            color: 'green',
+            type: 'DAILY_MISSION',
+            xpReward: 20,
+            status: 'TODO',
+          },
+        ],
+      })
+    }
   } catch (error) {
     console.error('Failed to initialize or seed database:', error)
   }

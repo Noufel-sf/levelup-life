@@ -34,7 +34,7 @@ export class XPService {
     description: string,
     skillId?: string | null
   ) {
-    return await prisma.$transaction(async (tx) => {
+    return await (prisma as any).$transaction(async (tx: any) => {
       let profile = await tx.userProfile.findFirst({
         include: { skills: true },
       })
