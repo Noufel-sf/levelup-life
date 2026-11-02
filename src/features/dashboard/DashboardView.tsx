@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import {
   Sparkles,
   CheckCircle2,
@@ -10,11 +10,9 @@ import {
   Award,
   Clock,
   Shield,
-  Activity,
-  Code2,
-  Heart,
-  Brain,
-  Star,
+  Calendar as CalendarIcon,
+  ArrowRight,
+  Filter,
 } from 'lucide-react'
 import { RetroCard, RetroCardHeader, RetroCardTitle } from '@/components/8bit/RetroCard'
 import { RetroButton } from '@/components/8bit/RetroButton'
@@ -29,25 +27,56 @@ interface DashboardViewProps {
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({ profile, onRefreshProfile }) => {
-  const [tasks, setTasks] = useState<TaskDTO[]>([])
+  const [allTasks, setAllTasks] = useState<TaskDTO[]>([])
   const [habits, setHabits] = useState<HabitDTO[]>([])
   const [newTaskTitle, setNewTaskTitle] = useState('')
+  const [newTaskDuration, setNewTaskDuration] = useState(45)
+  const [newTaskPriority, setNewTaskPriority] = useState('MEDIUM')
+  const [newTaskDate, setNewTaskDate] = useState('')
   const [isAddingTask, setIsAddingTask] = useState(false)
   const [notification, setNotification] = useState<string | null>(null)
 
-  const todayStr = new Date().toISOString().split('T')[0]
+  // Filter mode for Missions: 'today' | 'week' | 'active' | 'all'
+  const [missionFilter, setMissionFilter] = useState<'today' | 'week' | 'active' | 'all'>('today')
+
+  // Local date helper
+  const getLocalDateStr = (d: Date = new Date()) => {
+    const year = d.getFullYear()
+    const month = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+
+  const todayStr = useMemo(() => getLocalDateStr(new Date()), [])
+
+  // Calculate current week dates
+  const weekDateStrings = useMemo(() => {
+    const now = new Date()
+    const day = now.getDay()
+    const diff = now.getDate() - day + (day === 0 ? -6 : 1) // Monday start
+    const start = new Date(now)
+    start.setDate(diff)
+    start.setHours(0, 0, 0, 0)
+
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(start)
+      d.setDate(start.getDate() + i)
+      return getLocalDateStr(d)
+    })
+  }, [])
 
   useEffect(() => {
+    setNewTaskDate(todayStr)
     loadData()
-  }, [])
+  }, [todayStr])
 
   const loadData = async () => {
     if (!window.electronAPI) return
     const [fetchedTasks, fetchedHabits] = await Promise.all([
-      window.electronAPI.getTasks({ scheduledDate: todayStr }),
+      window.electronAPI.getTasks(), // Load ALL tasks from the planner & database
       window.electronAPI.getHabits(),
     ])
-    setTasks(fetchedTasks || [])
+    setAllTasks(fetchedTasks || [])
     setHabits(fetchedHabits || [])
   }
 
@@ -78,16 +107,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ profile, onRefresh
     await window.electronAPI.createTask({
       title: newTaskTitle.trim(),
       type: 'DAILY_MISSION',
-      scheduledDate: todayStr,
+      scheduledDate: newTaskDate || todayStr,
+      estimatedMin: newTaskDuration,
+      priority: newTaskPriority,
       xpReward: 20,
-      priority: 'MEDIUM',
-      difficulty: 'MEDIUM',
     })
 
     setNewTaskTitle('')
     setIsAddingTask(false)
     loadData()
-    showToast('New Mission Added!')
+    showToast('New Mission Deployed to Timeline!')
   }
 
   const showToast = (msg: string) => {
@@ -102,13 +131,56 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ profile, onRefresh
     return 'Good Evening, Operative'
   }
 
-  const completedTasks = tasks.filter((t) => t.status === 'COMPLETED').length
-  const totalTasks = tasks.length
-  const taskCompletionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
+  // Filter missions based on the selected tab
+  const displayedTasks = useMemo(() => {
+    switch (missionFilter) {
+      case 'today':
+        return allTasks.filter((t) => t.scheduledDate === todayStr)
+      case 'week':
+        return allTasks.filter((t) => t.scheduledDate && weekDateStrings.includes(t.scheduledDate))
+      case 'active':
+        return allTasks.filter((t) => t.status !== 'COMPLETED')
+      case 'all':
+      default:
+        return allTasks
+    }
+  }, [allTasks, missionFilter, todayStr, weekDateStrings])
+
+  // Analytics for Today vs This Week
+  const todayTasks = allTasks.filter((t) => t.scheduledDate === todayStr)
+  const todayCompleted = todayTasks.filter((t) => t.status === 'COMPLETED').length
+  const todayTotal = todayTasks.length
+  const todayCompletionRate = todayTotal > 0 ? Math.round((todayCompleted / todayTotal) * 100) : 0
+
+  const weekTasks = allTasks.filter((t) => t.scheduledDate && weekDateStrings.includes(t.scheduledDate))
+  const weekCompleted = weekTasks.filter((t) => t.status === 'COMPLETED').length
+  const weekTotal = weekTasks.length
+  const weekCompletionRate = weekTotal > 0 ? Math.round((weekCompleted / weekTotal) * 100) : 0
+
   const completedHabits = habits.filter((h) => h.logs.some((l) => l.date === todayStr && l.completed)).length
 
+  // Date badge helper
+  const getDateLabel = (taskDate?: string | null) => {
+    if (!taskDate) return { text: 'UNSCHEDULED', color: 'text-muted-foreground' }
+    if (taskDate === todayStr) return { text: 'TODAY', color: 'text-neon-cyan border-neon-cyan/60 bg-neon-cyan/15 font-bold' }
+
+    const tomorrow = new Date()
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    const tomorrowStr = getLocalDateStr(tomorrow)
+    if (taskDate === tomorrowStr) return { text: 'TOMORROW', color: 'text-neon-yellow border-neon-yellow/60 bg-neon-yellow/15 font-bold' }
+
+    // Parse date for day of week
+    const parts = taskDate.split('-')
+    if (parts.length === 3) {
+      const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]))
+      const dayName = d.toLocaleDateString('en', { weekday: 'short' })
+      return { text: `${dayName} ${parts[2]}/${parts[1]}`, color: 'text-primary border-primary/60 bg-primary/15' }
+    }
+    return { text: taskDate, color: 'text-muted-foreground' }
+  }
+
   return (
-    <div className="space-y-6 pb-12 relative">
+    <div className="space-y-6 pb-16 relative">
       {/* Ambient background glowing spots */}
       <div className="absolute -top-10 -left-10 w-80 h-80 bg-primary/20 rounded-full blur-[100px] pointer-events-none" />
       <div className="absolute top-40 -right-10 w-80 h-80 bg-neon-cyan/20 rounded-full blur-[100px] pointer-events-none" />
@@ -142,7 +214,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ profile, onRefresh
                   [ 01 ] SYSTEM ONLINE
                 </span>
                 <span className="text-[10px] font-mono px-2 py-0.5 border font-bold text-neon-pink border-neon-pink/60 bg-neon-pink/15 shadow-[0_0_8px_rgba(236,72,153,0.3)]">
-                  [ 02 ] RPG SYNC
+                  [ 02 ] PLANNER SYNC: ACTIVE
                 </span>
                 <span className="text-[10px] font-mono px-2 py-0.5 border font-bold text-neon-green border-neon-green/60 bg-neon-green/15 shadow-[0_0_8px_rgba(163,230,53,0.3)]">
                   [ 03 ] LEVEL {profile?.level || 1}
@@ -155,32 +227,33 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ profile, onRefresh
                 </span>
               </h2>
               <p className="text-xs text-muted-foreground mt-1 font-mono">
-                "Every completed quest crafts your character. Conquer your daily missions."
+                Real missions synchronized directly with your weekly and daily planner timeline.
               </p>
             </div>
           </div>
 
           <div className="flex items-center space-x-4 bg-secondary/80 p-3.5 border-2 border-neon-yellow shadow-[0_0_15px_rgba(250,204,21,0.25)]">
             <div className="text-right">
-              <p className="text-[10px] text-neon-yellow font-mono uppercase font-bold">Daily Completion</p>
+              <p className="text-[10px] text-neon-yellow font-mono uppercase font-bold">Today's Progress</p>
               <p className="font-mono text-sm font-bold text-neon-cyan">
-                {completedTasks}/{totalTasks} Done ({taskCompletionRate}%)
+                {todayCompleted}/{todayTotal} Done ({todayCompletionRate}%)
               </p>
+              <p className="text-[9px] text-muted-foreground font-mono">Week Plan: {weekCompleted}/{weekTotal}</p>
             </div>
             <div className="w-24">
-              <RetroProgressBar value={taskCompletionRate} max={100} variant="gold" />
+              <RetroProgressBar value={todayCompletionRate} max={100} variant="gold" />
             </div>
           </div>
         </div>
       </div>
 
-      {/* 4 Distinctly Colorful Metric Cards */}
+      {/* 4 Distinctly Colorful Metric Cards (DEV SCOPE Style) */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {/* Purple EXP Metric Card */}
         <div className="p-4 bg-primary/10 border-2 border-primary hover:border-primary transition-all shadow-[0_0_20px_rgba(168,85,247,0.25)] relative overflow-hidden group">
           <span className="absolute top-0 right-0 w-2 h-2 bg-primary shadow-[0_0_6px_#a855f7]" />
           <div className="flex items-center justify-between text-[10px] font-mono font-bold uppercase mb-2">
-            <span className="text-primary">[EXP HARVEST]</span>
+            <span className="text-primary">[EXP ACCUMULATED]</span>
             <div className="w-7 h-7 bg-primary/20 border border-primary flex items-center justify-center text-primary shadow-[0_0_10px_rgba(168,85,247,0.4)]">
               <Sparkles className="w-3.5 h-3.5" />
             </div>
@@ -189,39 +262,39 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ profile, onRefresh
             {profile?.currentXp || 0}
             <span className="text-xs text-primary/70 font-normal">XP</span>
           </div>
-          <p className="text-[10px] text-primary/80 mt-1 font-mono font-bold">+20 XP per mission</p>
+          <p className="text-[10px] text-primary/80 mt-1 font-mono font-bold">+20 to +50 XP per quest</p>
         </div>
 
-        {/* Cyan Missions Metric Card */}
+        {/* Cyan Planner Missions Metric Card */}
         <div className="p-4 bg-neon-cyan/10 border-2 border-neon-cyan hover:border-neon-cyan transition-all shadow-[0_0_20px_rgba(34,211,238,0.25)] relative overflow-hidden group">
           <span className="absolute top-0 right-0 w-2 h-2 bg-neon-cyan shadow-[0_0_6px_#22d3ee]" />
           <div className="flex items-center justify-between text-[10px] font-mono font-bold uppercase mb-2">
-            <span className="text-neon-cyan">[MISSION SCORE]</span>
+            <span className="text-neon-cyan">[PLANNER MISSIONS]</span>
             <div className="w-7 h-7 bg-neon-cyan/20 border border-neon-cyan flex items-center justify-center text-neon-cyan shadow-[0_0_10px_rgba(34,211,238,0.4)]">
               <Award className="w-3.5 h-3.5" />
             </div>
           </div>
           <div className="text-2xl font-bold font-mono text-neon-cyan flex items-baseline gap-1">
-            {taskCompletionRate}%
-            <span className="text-xs text-neon-cyan/70 font-normal">Done</span>
+            {weekCompleted}/{weekTotal}
+            <span className="text-xs text-neon-cyan/70 font-normal">({weekCompletionRate}%)</span>
           </div>
-          <p className="text-[10px] text-neon-cyan/80 mt-1 font-mono font-bold">{completedTasks} of {totalTasks} finished</p>
+          <p className="text-[10px] text-neon-cyan/80 mt-1 font-mono font-bold">{todayCompleted}/{todayTotal} completed today</p>
         </div>
 
         {/* Pink Streak Metric Card */}
         <div className="p-4 bg-neon-pink/10 border-2 border-neon-pink hover:border-neon-pink transition-all shadow-[0_0_20px_rgba(236,72,153,0.25)] relative overflow-hidden group">
           <span className="absolute top-0 right-0 w-2 h-2 bg-neon-pink shadow-[0_0_6px_#ec4899]" />
           <div className="flex items-center justify-between text-[10px] font-mono font-bold uppercase mb-2">
-            <span className="text-neon-pink">[HABIT STREAK]</span>
+            <span className="text-neon-pink">[HABIT PROTOCOLS]</span>
             <div className="w-7 h-7 bg-neon-pink/20 border border-neon-pink flex items-center justify-center text-neon-pink shadow-[0_0_10px_rgba(236,72,153,0.4)]">
               <Flame className="w-3.5 h-3.5" />
             </div>
           </div>
           <div className="text-2xl font-bold font-mono text-neon-pink flex items-baseline gap-1">
             {completedHabits}/{habits.length}
-            <span className="text-xs text-neon-pink/70 font-normal">Active</span>
+            <span className="text-xs text-neon-pink/70 font-normal">Done</span>
           </div>
-          <p className="text-[10px] text-neon-pink/80 mt-1 font-mono font-bold">Daily protocols synced</p>
+          <p className="text-[10px] text-neon-pink/80 mt-1 font-mono font-bold">Daily rituals active</p>
         </div>
 
         {/* Green Agent Rank Metric Card */}
@@ -243,42 +316,116 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ profile, onRefresh
 
       {/* Grid: Missions & Habits */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Daily Missions (Quests) */}
+        {/* Real Planner Missions Section */}
         <div className="lg:col-span-2 space-y-4">
-          <div className="bg-card border-2 border-primary shadow-[0_0_25px_rgba(168,85,247,0.2)] p-4 relative">
-            <span className="absolute -top-1 -right-1 w-2 h-2 bg-primary shadow-[0_0_6px_#a855f7]" />
+          <div className="bg-card border-2 border-primary shadow-[0_0_25px_rgba(168,85,247,0.2)] p-5 relative">
+            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-primary shadow-[0_0_8px_#a855f7]" />
 
-            <div className="flex items-center justify-between pb-3 border-b border-primary/40 mb-3">
-              <div className="flex items-center space-x-2">
-                <div className="w-7 h-7 bg-primary/20 border border-primary flex items-center justify-center text-primary shadow-[0_0_10px_rgba(168,85,247,0.4)]">
+            {/* Header + Filter Tabs */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3.5 border-b border-primary/40 mb-4 gap-3">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-8 h-8 bg-primary/20 border border-primary flex items-center justify-center text-primary shadow-[0_0_10px_rgba(168,85,247,0.4)]">
                   <Award className="w-4 h-4" />
                 </div>
-                <h3 className="font-pixel text-xs text-primary tracking-wider">TODAY'S MISSIONS</h3>
-                <span className="text-[10px] font-mono px-2 py-0.5 border font-bold text-primary border-primary/60 bg-primary/15 shadow-[0_0_8px_rgba(168,85,247,0.3)]">
-                  {tasks.length}
-                </span>
+                <div>
+                  <h3 className="font-pixel text-xs text-primary tracking-wider">PLANNER MISSIONS</h3>
+                  <p className="text-[10px] font-mono text-muted-foreground">
+                    Synchronized with your weekly timeline
+                  </p>
+                </div>
               </div>
 
-              <RetroButton
-                size="sm"
-                variant="cyan"
-                onClick={() => setIsAddingTask(!isAddingTask)}
-              >
-                <Plus className="w-3.5 h-3.5 mr-1" />
-                Add Mission
-              </RetroButton>
+              {/* Filter Tabs */}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <div className="flex bg-secondary border border-border p-0.5">
+                  {[
+                    { id: 'today', label: "Today's Plan" },
+                    { id: 'week', label: 'This Week' },
+                    { id: 'active', label: 'All Active' },
+                    { id: 'all', label: 'All' },
+                  ].map((tab) => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setMissionFilter(tab.id as any)}
+                      className={`px-2 py-0.5 text-[10px] font-mono uppercase font-bold transition-colors cursor-pointer ${
+                        missionFilter === tab.id
+                          ? 'bg-neon-cyan text-black border border-neon-cyan shadow-[0_0_8px_rgba(34,211,238,0.4)]'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+
+                <RetroButton
+                  size="sm"
+                  variant="cyan"
+                  onClick={() => setIsAddingTask(!isAddingTask)}
+                >
+                  <Plus className="w-3.5 h-3.5 mr-1" />
+                  Add
+                </RetroButton>
+              </div>
             </div>
 
-            {/* Quick Add Form */}
+            {/* Quick Add Form with Planner Date & Duration */}
             {isAddingTask && (
-              <form onSubmit={handleCreateTask} className="mb-4 p-3.5 bg-secondary border-2 border-neon-cyan shadow-[0_0_15px_rgba(34,211,238,0.25)] space-y-2">
+              <form onSubmit={handleCreateTask} className="mb-4 p-4 bg-secondary border-2 border-neon-cyan shadow-[0_0_15px_rgba(34,211,238,0.25)] space-y-3">
                 <RetroInput
                   placeholder="Enter quest objective..."
                   value={newTaskTitle}
                   onChange={(e) => setNewTaskTitle(e.target.value)}
                   autoFocus
+                  required
                 />
-                <div className="flex justify-end space-x-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  <div>
+                    <label className="block text-[10px] font-mono text-muted-foreground mb-1">
+                      Scheduled Date
+                    </label>
+                    <RetroInput
+                      type="date"
+                      value={newTaskDate}
+                      onChange={(e) => setNewTaskDate(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-mono text-muted-foreground mb-1">
+                      Duration
+                    </label>
+                    <select
+                      value={newTaskDuration}
+                      onChange={(e) => setNewTaskDuration(Number(e.target.value))}
+                      className="w-full bg-card border border-border px-2 py-1.5 text-xs font-mono text-foreground focus:outline-none"
+                    >
+                      <option value={15}>15 mins</option>
+                      <option value={30}>30 mins</option>
+                      <option value={45}>45 mins</option>
+                      <option value={60}>1 hour</option>
+                      <option value={90}>1.5 hours</option>
+                      <option value={120}>2 hours</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-mono text-muted-foreground mb-1">
+                      Priority
+                    </label>
+                    <select
+                      value={newTaskPriority}
+                      onChange={(e) => setNewTaskPriority(e.target.value)}
+                      className="w-full bg-card border border-border px-2 py-1.5 text-xs font-mono text-foreground focus:outline-none"
+                    >
+                      <option value="LOW">Low</option>
+                      <option value="MEDIUM">Medium</option>
+                      <option value="HIGH">High</option>
+                      <option value="CRITICAL">Critical</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex justify-end space-x-2 pt-1">
                   <RetroButton
                     type="button"
                     size="sm"
@@ -288,77 +435,87 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ profile, onRefresh
                     Cancel
                   </RetroButton>
                   <RetroButton type="submit" size="sm" variant="cyan" pixelFont>
-                    Deploy Quest (+20 XP)
+                    Deploy to Timeline (+20 XP)
                   </RetroButton>
                 </div>
               </form>
             )}
 
             {/* Task List */}
-            <div className="space-y-2">
-              {tasks.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground border-2 border-dashed border-border p-6 bg-secondary/30">
-                  <p className="text-sm font-mono text-neon-cyan font-bold">No missions scheduled for today!</p>
-                  <p className="text-xs text-muted-foreground/70 mt-1 font-mono">
-                    Deploy a quest above or check the Calendar to schedule timeblocks.
+            <div className="space-y-2.5">
+              {displayedTasks.length === 0 ? (
+                <div className="text-center py-10 text-muted-foreground border-2 border-dashed border-border p-6 bg-secondary/30">
+                  <CalendarIcon className="w-8 h-8 mx-auto text-neon-cyan/50 mb-2 animate-pulse" />
+                  <p className="text-sm font-mono text-neon-cyan font-bold">
+                    No missions found for this filter!
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1 font-mono max-w-sm mx-auto">
+                    Deploy a quest above or check the Weekly Planner to organize your week.
                   </p>
                 </div>
               ) : (
-                tasks.map((task) => {
+                displayedTasks.map((task) => {
                   const isDone = task.status === 'COMPLETED'
+                  const dateInfo = getDateLabel(task.scheduledDate)
+
                   // Priority border colors
                   const priorityColor =
                     task.priority === 'CRITICAL'
-                      ? 'border-l-4 border-l-neon-pink hover:border-neon-pink bg-neon-pink/5'
+                      ? 'border-l-4 border-l-neon-pink bg-neon-pink/5 hover:border-neon-pink'
                       : task.priority === 'HIGH'
-                      ? 'border-l-4 border-l-neon-yellow hover:border-neon-yellow bg-neon-yellow/5'
-                      : 'border-l-4 border-l-neon-cyan hover:border-neon-cyan bg-neon-cyan/5'
+                      ? 'border-l-4 border-l-neon-yellow bg-neon-yellow/5 hover:border-neon-yellow'
+                      : 'border-l-4 border-l-neon-cyan bg-neon-cyan/5 hover:border-neon-cyan'
 
                   return (
                     <div
                       key={task.id}
                       onClick={() => handleToggleTask(task.id)}
-                      className={`flex items-center justify-between p-3 border transition-all cursor-pointer ${
+                      className={`flex items-center justify-between p-3.5 border transition-all cursor-pointer ${
                         isDone
                           ? 'bg-secondary/40 border-border/40 opacity-50'
                           : `bg-secondary border-border ${priorityColor} hover:shadow-[0_0_15px_rgba(34,211,238,0.2)]`
                       }`}
                     >
-                      <div className="flex items-center space-x-3 overflow-hidden">
+                      <div className="flex items-center space-x-3.5 overflow-hidden flex-1 min-w-0 mr-3">
                         {isDone ? (
                           <CheckCircle2 className="w-5 h-5 text-neon-green flex-shrink-0" />
                         ) : (
-                          <Circle className="w-5 h-5 text-neon-cyan hover:scale-110 flex-shrink-0 transition-transform" />
+                          <Circle className="w-5 h-5 text-neon-cyan hover:scale-125 flex-shrink-0 transition-transform" />
                         )}
-                        <div>
-                          <p
-                            className={`text-xs font-mono font-bold ${
-                              isDone ? 'line-through text-muted-foreground' : 'text-foreground'
-                            }`}
-                          >
-                            {task.title}
-                          </p>
-                          <div className="flex items-center space-x-2 mt-1">
-                            <span className="text-[10px] text-muted-foreground flex items-center font-mono">
-                              <Clock className="w-2.5 h-2.5 mr-1 text-neon-yellow" />
-                              {task.estimatedMin || 30}m
-                            </span>
-                            <span
-                              className={`text-[8px] font-mono px-1.5 py-0.2 border uppercase font-bold ${
-                                task.priority === 'CRITICAL'
-                                  ? 'text-neon-pink border-neon-pink/60 bg-neon-pink/15'
-                                  : task.priority === 'HIGH'
-                                  ? 'text-neon-yellow border-neon-yellow/60 bg-neon-yellow/15'
-                                  : 'text-neon-cyan border-neon-cyan/60 bg-neon-cyan/15'
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center space-x-2 flex-wrap gap-y-0.5">
+                            <p
+                              className={`text-xs font-mono font-bold truncate ${
+                                isDone ? 'line-through text-muted-foreground' : 'text-foreground'
                               }`}
                             >
+                              {task.title}
+                            </p>
+                            {/* Date Badge from Planner */}
+                            <span className={`text-[8px] font-mono px-1.5 py-0.2 border uppercase ${dateInfo.color}`}>
+                              {dateInfo.text}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center space-x-2.5 mt-1 text-[10px] font-mono text-muted-foreground">
+                            <span className="flex items-center">
+                              <Clock className="w-2.5 h-2.5 mr-1 text-neon-yellow" />
+                              {task.startTime ? `${task.startTime} • ` : ''}
+                              {task.estimatedMin || 30}m
+                            </span>
+                            <span className="uppercase text-[8px] px-1 py-0.2 bg-background border border-border">
                               {task.priority}
                             </span>
+                            {task.goal && (
+                              <span className="text-[8px] text-primary truncate max-w-[120px]">
+                                {task.goal.title}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
 
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-2 shrink-0">
                         <span
                           className={`font-mono text-xs px-2 py-0.5 border font-bold ${
                             isDone
