@@ -37,7 +37,7 @@ export function App() {
       case 'calendar':
         return <CalendarView onRefreshProfile={refreshProfile} />
       case 'planner':
-        return <PlannerView />
+        return <PlannerView onRefreshProfile={refreshProfile} />
       case 'quests':
         return <QuestsView onRefreshProfile={refreshProfile} />
       case 'habits':

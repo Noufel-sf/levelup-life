@@ -2,7 +2,7 @@ import React from "react"
 import { cn } from "@/lib/utils"
 
 export interface RetroButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "primary" | "pink" | "cyan" | "green" | "secondary" | "ghost" | "danger"
+  variant?: "primary" | "pink" | "cyan" | "green" | "yellow" | "secondary" | "ghost" | "danger"
   size?: "sm" | "md" | "lg"
   pixelFont?: boolean
 }
@@ -22,6 +22,7 @@ export const RetroButton = React.forwardRef<HTMLButtonElement, RetroButtonProps>
       pink: "bg-neon-pink text-white border border-neon-pink shadow-[0_0_15px_rgba(236,72,153,0.35)] hover:shadow-[0_0_20px_rgba(236,72,153,0.6)] hover:bg-neon-pink/90",
       cyan: "bg-neon-cyan text-black font-bold border border-neon-cyan shadow-[0_0_15px_rgba(34,211,238,0.35)] hover:shadow-[0_0_20px_rgba(34,211,238,0.6)] hover:bg-neon-cyan/90",
       green: "bg-neon-green text-black font-bold border border-neon-green shadow-[0_0_15px_rgba(163,230,53,0.35)] hover:shadow-[0_0_20px_rgba(163,230,53,0.6)] hover:bg-neon-green/90",
+      yellow: "bg-neon-yellow text-black font-bold border border-neon-yellow shadow-[0_0_15px_rgba(250,204,21,0.35)] hover:shadow-[0_0_20px_rgba(250,204,21,0.6)] hover:bg-neon-yellow/90",
       secondary: "bg-card text-foreground border border-border hover:border-neon-cyan hover:text-neon-cyan hover:bg-secondary transition-colors",
       ghost: "bg-transparent text-muted-foreground hover:text-foreground hover:bg-secondary border border-transparent hover:border-border transition-colors",
       danger: "bg-destructive text-white border border-destructive shadow-[0_0_15px_rgba(239,68,68,0.35)] hover:bg-destructive/90",
