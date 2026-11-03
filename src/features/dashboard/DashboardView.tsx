@@ -19,6 +19,7 @@ import { RetroButton } from '@/components/8bit/RetroButton'
 import { RetroBadge } from '@/components/8bit/RetroBadge'
 import { RetroProgressBar } from '@/components/8bit/RetroProgressBar'
 import { RetroInput } from '@/components/8bit/RetroInput'
+import { PixelAvatar } from '@/components/character/PixelAvatar'
 import { soundEngine } from '@/lib/sound'
 import { UserProfileDTO, TaskDTO, HabitDTO } from '@/types/ipc'
 
@@ -307,20 +308,20 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ profile, onRefresh
           <p className="text-[10px] text-neon-pink/80 mt-1 font-mono font-bold">Daily rituals active</p>
         </div>
 
-        {/* Green Agent Rank Metric Card */}
+        {/* Green Agent Rank Metric Card with Equipped Avatar */}
         <div className="p-4 bg-neon-green/10 border-2 border-neon-green hover:border-neon-green transition-all shadow-[0_0_20px_rgba(163,230,53,0.25)] relative overflow-hidden group">
           <span className="absolute top-0 right-0 w-2 h-2 bg-neon-green shadow-[0_0_6px_#a3e635]" />
           <div className="flex items-center justify-between text-[10px] font-mono font-bold uppercase mb-2">
             <span className="text-neon-green">[AGENT RANK]</span>
-            <div className="w-7 h-7 bg-neon-green/20 border border-neon-green flex items-center justify-center text-neon-green shadow-[0_0_10px_rgba(163,230,53,0.4)]">
-              <Shield className="w-3.5 h-3.5" />
+            <div className="w-8 h-8 border border-neon-green flex items-center justify-center shadow-[0_0_10px_rgba(163,230,53,0.4)] overflow-hidden">
+              <PixelAvatar avatarId={profile?.avatarId} size="sm" showBorder={false} />
             </div>
           </div>
           <div className="text-2xl font-bold font-mono text-neon-green flex items-baseline gap-1">
             Lv.{profile?.level || 1}
             <span className="text-xs text-neon-green/70 font-normal">Rank</span>
           </div>
-          <p className="text-[10px] text-neon-green/80 mt-1 font-mono font-bold truncate">{profile?.title || 'Operative'}</p>
+          <p className="text-[10px] text-neon-green/90 mt-1 font-pixel font-bold truncate">« {profile?.title || 'Operative'} »</p>
         </div>
       </div>
 

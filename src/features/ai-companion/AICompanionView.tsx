@@ -17,19 +17,26 @@ import {
   Calendar,
   MessageSquare,
   Wand2,
+  Award,
+  TrendingUp,
+  Flame,
+  RefreshCw,
+  Check,
 } from 'lucide-react'
 import { RetroCard, RetroCardHeader, RetroCardTitle } from '@/components/8bit/RetroCard'
 import { RetroButton } from '@/components/8bit/RetroButton'
 import { RetroBadge } from '@/components/8bit/RetroBadge'
 import { RetroInput } from '@/components/8bit/RetroInput'
+import { soundEngine } from '@/lib/sound'
 import { NavTab } from '@/components/layout/Sidebar'
+import { WeeklyReviewDTO, AdaptiveRescheduleDTO } from '@/types/ipc'
 
 interface AICompanionViewProps {
   onRefreshProfile?: () => void
   onNavigateTab?: (tab: NavTab) => void
 }
 
-type AITab = 'decompose' | 'planner-coach' | 'chat'
+type AITab = 'decompose' | 'planner-coach' | 'weekly-debrief' | 'adaptive-reschedule' | 'chat'
 
 interface TaskSuggestion {
   title: string
@@ -80,6 +87,16 @@ export const AICompanionView: React.FC<AICompanionViewProps> = ({
   // Daily Planner Coach States
   const [isAnalyzingDay, setIsAnalyzingDay] = useState(false)
   const [dailyPlanAdvice, setDailyPlanAdvice] = useState<any | null>(null)
+
+  // Weekly Retrospective States
+  const [isGeneratingReview, setIsGeneratingReview] = useState(false)
+  const [weeklyReview, setWeeklyReview] = useState<WeeklyReviewDTO | null>(null)
+
+  // Adaptive Rescheduling States
+  const [isAnalyzingReschedule, setIsAnalyzingReschedule] = useState(false)
+  const [reschedulePlan, setReschedulePlan] = useState<AdaptiveRescheduleDTO | null>(null)
+  const [isApplyingReschedules, setIsApplyingReschedules] = useState(false)
+  const [rescheduleAppliedSuccess, setRescheduleAppliedSuccess] = useState(false)
 
   // Chat States
   const [chatInput, setChatInput] = useState('')
@@ -154,6 +171,57 @@ export const AICompanionView: React.FC<AICompanionViewProps> = ({
       console.error('Failed to analyze day:', err)
     } finally {
       setIsAnalyzingDay(false)
+    }
+  }
+
+  // Handle Weekly Retrospective Generation
+  const handleGenerateReview = async () => {
+    if (!window.electronAPI?.aiGenerateWeeklyReview) return
+    setIsGeneratingReview(true)
+    try {
+      const rep = await window.electronAPI.aiGenerateWeeklyReview()
+      setWeeklyReview(rep)
+      soundEngine.playLevelUp()
+      onRefreshProfile?.()
+    } catch (err) {
+      console.error('Failed to generate weekly review:', err)
+    } finally {
+      setIsGeneratingReview(false)
+    }
+  }
+
+  // Handle Adaptive Reschedule Scan
+  const handleSuggestReschedule = async () => {
+    if (!window.electronAPI?.aiSuggestAdaptiveReschedule) return
+    setIsAnalyzingReschedule(true)
+    setRescheduleAppliedSuccess(false)
+    try {
+      const plan = await window.electronAPI.aiSuggestAdaptiveReschedule()
+      setReschedulePlan(plan)
+      soundEngine.playClick()
+    } catch (err) {
+      console.error('Failed to suggest adaptive reschedule:', err)
+    } finally {
+      setIsAnalyzingReschedule(false)
+    }
+  }
+
+  // Handle Batch Apply Reschedules
+  const handleApplyReschedules = async () => {
+    if (!window.electronAPI?.aiApplyAdaptiveReschedules || !reschedulePlan?.reschedules.length) return
+    setIsApplyingReschedules(true)
+    try {
+      const res = await window.electronAPI.aiApplyAdaptiveReschedules(reschedulePlan.reschedules)
+      if (res.success) {
+        soundEngine.playAchievement()
+        setRescheduleAppliedSuccess(true)
+        setReschedulePlan(null)
+        onRefreshProfile?.()
+      }
+    } catch (err) {
+      console.error('Failed to apply reschedules:', err)
+    } finally {
+      setIsApplyingReschedules(false)
     }
   }
 
@@ -286,6 +354,36 @@ export const AICompanionView: React.FC<AICompanionViewProps> = ({
         >
           <Calendar className="w-3.5 h-3.5" />
           <span>Daily Plan Analysis</span>
+        </button>
+
+        <button
+          onClick={() => {
+            setActiveTab('weekly-debrief')
+            if (!weeklyReview) handleGenerateReview()
+          }}
+          className={`flex items-center gap-2 px-3 py-1.5 font-mono text-xs font-bold uppercase tracking-wider border transition-all cursor-pointer ${
+            activeTab === 'weekly-debrief'
+              ? 'bg-neon-yellow/20 text-neon-yellow border-neon-yellow shadow-[0_0_12px_rgba(250,204,21,0.3)]'
+              : 'bg-secondary text-muted-foreground border-border hover:border-muted-foreground'
+          }`}
+        >
+          <Award className="w-3.5 h-3.5" />
+          <span>Weekly Debrief Report</span>
+        </button>
+
+        <button
+          onClick={() => {
+            setActiveTab('adaptive-reschedule')
+            if (!reschedulePlan) handleSuggestReschedule()
+          }}
+          className={`flex items-center gap-2 px-3 py-1.5 font-mono text-xs font-bold uppercase tracking-wider border transition-all cursor-pointer ${
+            activeTab === 'adaptive-reschedule'
+              ? 'bg-neon-green/20 text-neon-green border-neon-green shadow-[0_0_12px_rgba(163,230,53,0.3)]'
+              : 'bg-secondary text-muted-foreground border-border hover:border-muted-foreground'
+          }`}
+        >
+          <RotateCcw className="w-3.5 h-3.5" />
+          <span>Adaptive Rescheduler</span>
         </button>
 
         <button
@@ -610,7 +708,297 @@ export const AICompanionView: React.FC<AICompanionViewProps> = ({
         </div>
       )}
 
-      {/* TAB 3: Synth Terminal Chat */}
+      {/* TAB 3: Weekly Retrospective Debrief */}
+      {activeTab === 'weekly-debrief' && (
+        <div className="space-y-5">
+          <RetroCard variant="accent-yellow" glow topStripe className="p-5">
+            <RetroCardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border">
+              <div className="flex items-center space-x-2">
+                <Award className="w-4 h-4 text-neon-yellow" />
+                <RetroCardTitle pixelFont>SYNTH WEEKLY RETROSPECTIVE DEBRIEF</RetroCardTitle>
+              </div>
+
+              <RetroButton
+                variant="yellow"
+                size="sm"
+                pixelFont
+                onClick={handleGenerateReview}
+                disabled={isGeneratingReview}
+              >
+                {isGeneratingReview ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                    Synthesizing Telemetry...
+                  </>
+                ) : (
+                  <>
+                    <Award className="w-3.5 h-3.5 mr-1.5" />
+                    Generate Retrospective (+75 XP)
+                  </>
+                )}
+              </RetroButton>
+            </RetroCardHeader>
+
+            {weeklyReview ? (
+              <div className="space-y-5 font-mono text-xs">
+                {/* Header Banner with Huge Arcade Performance Grade */}
+                <div className="p-4 bg-secondary/80 border-2 border-neon-yellow/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <span className="text-[9px] text-neon-yellow uppercase font-bold tracking-widest block">
+                      PERFORMANCE EVALUATION // {weeklyReview.title}
+                    </span>
+                    <h2 className="font-pixel text-base text-foreground tracking-wide">
+                      {weeklyReview.executiveSummary}
+                    </h2>
+                  </div>
+
+                  {/* Huge Arcade Tier Grade */}
+                  <div className="flex flex-col items-center justify-center shrink-0">
+                    <span className="text-[8px] font-pixel text-muted-foreground uppercase">RANK TIER</span>
+                    <div
+                      className={`w-14 h-14 border-2 flex items-center justify-center font-pixel text-2xl font-bold shadow-lg ${
+                        weeklyReview.grade === 'S'
+                          ? 'border-neon-yellow text-neon-yellow bg-neon-yellow/15 shadow-[0_0_20px_#facc15]'
+                          : weeklyReview.grade === 'A'
+                          ? 'border-neon-green text-neon-green bg-neon-green/15 shadow-[0_0_15px_#a3e635]'
+                          : weeklyReview.grade === 'B'
+                          ? 'border-neon-cyan text-neon-cyan bg-neon-cyan/15 shadow-[0_0_12px_#22d3ee]'
+                          : 'border-neon-pink text-neon-pink bg-neon-pink/15'
+                      }`}
+                    >
+                      {weeklyReview.grade}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 4-Stat Telemetry Matrix */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="p-3 bg-secondary/50 border border-border text-center">
+                    <span className="text-[9px] text-muted-foreground block uppercase font-bold">Missions Conquered</span>
+                    <span className="text-sm font-pixel text-neon-green font-bold">{weeklyReview.completedCount}</span>
+                  </div>
+                  <div className="p-3 bg-secondary/50 border border-border text-center">
+                    <span className="text-[9px] text-muted-foreground block uppercase font-bold">Lapsed / Postponed</span>
+                    <span className="text-sm font-pixel text-neon-pink font-bold">{weeklyReview.postponedCount}</span>
+                  </div>
+                  <div className="p-3 bg-secondary/50 border border-border text-center">
+                    <span className="text-[9px] text-muted-foreground block uppercase font-bold">Habit Consistency</span>
+                    <span className="text-sm font-pixel text-neon-yellow font-bold">{weeklyReview.habitConsistencyPct}%</span>
+                  </div>
+                  <div className="p-3 bg-secondary/50 border border-border text-center">
+                    <span className="text-[9px] text-muted-foreground block uppercase font-bold">XP Harvested</span>
+                    <span className="text-sm font-pixel text-neon-cyan font-bold">+{weeklyReview.weeklyXp} XP</span>
+                  </div>
+                </div>
+
+                {/* Dominant Attribute & Bottlenecks */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="p-3 bg-secondary/40 border border-border space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[9px] text-muted-foreground uppercase font-bold">DOMINANT ATTRIBUTE</span>
+                      <RetroBadge variant="cyan" pixelFont className="text-[8px]">
+                        {weeklyReview.strongestArea}
+                      </RetroBadge>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">
+                      This attribute absorbed the majority of your quest momentum this week.
+                    </p>
+                  </div>
+
+                  <div className="p-3 bg-secondary/40 border border-border space-y-2">
+                    <span className="text-[9px] text-neon-pink uppercase font-bold block">
+                      TACTICAL BOTTLENECKS
+                    </span>
+                    <ul className="space-y-1 text-[11px] text-muted-foreground">
+                      {weeklyReview.bottlenecks.map((b, idx) => (
+                        <li key={idx} className="flex items-start gap-1.5">
+                          <span className="text-neon-pink font-bold">•</span>
+                          <span>{b}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+
+                {/* Directives for Next Week */}
+                <div className="p-4 bg-secondary/40 border border-neon-yellow/40 space-y-2.5">
+                  <div className="flex items-center space-x-2">
+                    <TrendingUp className="w-4 h-4 text-neon-yellow" />
+                    <span className="font-pixel text-xs text-neon-yellow tracking-wider">
+                      DIRECTIVES FOR THE UPCOMING WEEK
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+                    {weeklyReview.nextWeekDirectives.map((d, idx) => (
+                      <div key={idx} className="p-2.5 bg-card border border-border text-[11px] space-y-1">
+                        <span className="font-pixel text-[8px] text-neon-yellow">DIRECTIVE {idx + 1}</span>
+                        <p className="text-muted-foreground leading-relaxed">{d}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Quote and Bonus Confirmation */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2 border-t border-border">
+                  <p className="text-[11px] text-neon-yellow italic">"{weeklyReview.cyberQuote}"</p>
+                  <RetroBadge variant="green" pixelFont className="text-[8px] shrink-0 self-end sm:self-auto">
+                    +75 RETROSPECTIVE XP CLAIMED
+                  </RetroBadge>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-12 space-y-3">
+                <Award className="w-10 h-10 text-neon-yellow/50 mx-auto animate-bounce" />
+                <h3 className="font-pixel text-xs text-neon-yellow">SUNDAY TACTICAL RETROSPECTIVE</h3>
+                <p className="text-xs text-muted-foreground font-mono max-w-md mx-auto">
+                  Execute Synth's intelligence analysis over your past 7 days of missions, habit protocols, and XP progression.
+                </p>
+                <RetroButton
+                  variant="yellow"
+                  size="md"
+                  pixelFont
+                  onClick={handleGenerateReview}
+                  disabled={isGeneratingReview}
+                  className="mt-2"
+                >
+                  <Award className="w-3.5 h-3.5 mr-1.5" />
+                  Initiate Retrospective Debrief (+75 XP)
+                </RetroButton>
+              </div>
+            )}
+          </RetroCard>
+        </div>
+      )}
+
+      {/* TAB 4: Adaptive Rescheduler */}
+      {activeTab === 'adaptive-reschedule' && (
+        <div className="space-y-5">
+          <RetroCard variant="accent-green" glow topStripe className="p-5">
+            <RetroCardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border">
+              <div className="flex items-center space-x-2">
+                <RotateCcw className="w-4 h-4 text-neon-green" />
+                <RetroCardTitle pixelFont>SYNTH ADAPTIVE RESCHEDULER</RetroCardTitle>
+              </div>
+
+              <RetroButton
+                variant="green"
+                size="sm"
+                pixelFont
+                onClick={handleSuggestReschedule}
+                disabled={isAnalyzingReschedule}
+              >
+                {isAnalyzingReschedule ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                    Scanning Overload...
+                  </>
+                ) : (
+                  <>
+                    <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
+                    Scan Timeline & Overdue
+                  </>
+                )}
+              </RetroButton>
+            </RetroCardHeader>
+
+            {rescheduleAppliedSuccess && (
+              <div className="p-3 bg-neon-green/15 border border-neon-green text-neon-green font-mono text-xs flex items-center space-x-2 animate-bounce">
+                <Check className="w-4 h-4 stroke-[3]" />
+                <span className="font-pixel text-[10px]">
+                  TIMELINE REBALANCED // ALL MISSIONS SYNCED TO SQLITE!
+                </span>
+              </div>
+            )}
+
+            {reschedulePlan ? (
+              <div className="space-y-4 font-mono text-xs">
+                {/* Analysis Message */}
+                <div className="p-3 bg-secondary/80 border-l-4 border-neon-green flex items-start space-x-3">
+                  <Sparkles className="w-4 h-4 text-neon-green shrink-0 mt-0.5" />
+                  <p className="text-foreground leading-relaxed">{reschedulePlan.analysis}</p>
+                </div>
+
+                {/* Reschedule List */}
+                {reschedulePlan.reschedules.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground border-2 border-dashed border-border p-6 bg-secondary/20">
+                    <CheckCircle2 className="w-8 h-8 text-neon-green mx-auto mb-2" />
+                    <p className="font-pixel text-xs text-neon-green font-bold">ALL MISSIONS ON SCHEDULE</p>
+                    <p className="text-xs text-muted-foreground mt-1 font-mono">
+                      No overdue or backlogged quests detected on your timeline.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between pb-1 border-b border-border">
+                      <span className="text-[10px] text-muted-foreground uppercase font-bold">
+                        PROPOSED TIMELINE REDISTRIBUTION ({reschedulePlan.reschedules.length})
+                      </span>
+                      <RetroButton
+                        variant="green"
+                        size="sm"
+                        pixelFont
+                        onClick={handleApplyReschedules}
+                        disabled={isApplyingReschedules}
+                      >
+                        {isApplyingReschedules ? 'Applying...' : 'Apply All Reschedules (+Sync)'}
+                      </RetroButton>
+                    </div>
+
+                    <div className="space-y-2">
+                      {reschedulePlan.reschedules.map((r, idx) => (
+                        <div
+                          key={idx}
+                          className="p-3 bg-secondary/60 border border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+                        >
+                          <div className="space-y-1 min-w-0 flex-1">
+                            <span className="font-pixel text-xs text-foreground block truncate">
+                              {r.taskTitle}
+                            </span>
+                            <p className="text-[10px] text-muted-foreground font-mono">
+                              {r.reason}
+                            </p>
+                          </div>
+
+                          <div className="flex items-center space-x-2 shrink-0 font-mono text-[10px]">
+                            <span className="px-2 py-0.5 bg-destructive/20 border border-destructive/50 text-destructive line-through">
+                              {r.currentDate || 'OVERDUE'}
+                            </span>
+                            <ArrowRight className="w-3.5 h-3.5 text-neon-green" />
+                            <span className="px-2 py-0.5 bg-neon-green/20 border border-neon-green text-neon-green font-bold">
+                              {r.proposedDate}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-12 space-y-3">
+                <RotateCcw className="w-10 h-10 text-neon-green/50 mx-auto animate-pulse" />
+                <h3 className="font-pixel text-xs text-neon-green">ADAPTIVE TIMELINE OPTIMIZER</h3>
+                <p className="text-xs text-muted-foreground font-mono max-w-md mx-auto">
+                  Lapsed missions or heavy days? Synth analyzes available capacity over the next 7 days and redistributes your workload without burnout.
+                </p>
+                <RetroButton
+                  variant="green"
+                  size="md"
+                  pixelFont
+                  onClick={handleSuggestReschedule}
+                  disabled={isAnalyzingReschedule}
+                  className="mt-2"
+                >
+                  <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
+                  Scan & Propose Rebalance
+                </RetroButton>
+              </div>
+            )}
+          </RetroCard>
+        </div>
+      )}
+
+      {/* TAB 5: Synth Terminal Chat */}
       {activeTab === 'chat' && (
         <RetroCard variant="default" className="p-0 overflow-hidden border-2 border-primary shadow-[0_0_25px_rgba(168,85,247,0.2)]">
           {/* Terminal Header */}

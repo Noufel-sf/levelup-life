@@ -157,6 +157,9 @@ export interface ElectronAPI {
   aiDeployGoal: (data: any) => Promise<any>
   aiSuggestDailyPlan: (dateStr?: string) => Promise<any>
   aiChat: (message: string, history?: any[]) => Promise<string>
+  aiGenerateWeeklyReview: () => Promise<WeeklyReviewDTO>
+  aiSuggestAdaptiveReschedule: () => Promise<AdaptiveRescheduleDTO>
+  aiApplyAdaptiveReschedules: (reschedules: Array<{ taskId: string; proposedDate: string }>) => Promise<{ success: boolean; count: number }>
 
   // RPG Achievements & Trophies
   listAchievements: () => Promise<AchievementDTO[]>
@@ -191,6 +194,32 @@ export interface AchievementDTO {
   xpReward: number
   isUnlocked: boolean
   unlockedAt?: string | null
+}
+
+export interface WeeklyReviewDTO {
+  grade: 'S' | 'A' | 'B' | 'C' | 'D'
+  title: string
+  executiveSummary: string
+  completedCount: number
+  postponedCount: number
+  habitConsistencyPct: number
+  weeklyXp: number
+  strongestArea: string
+  bottlenecks: string[]
+  nextWeekDirectives: string[]
+  cyberQuote: string
+  bonusXpAwarded: number
+}
+
+export interface AdaptiveRescheduleDTO {
+  analysis: string
+  reschedules: Array<{
+    taskId: string
+    taskTitle: string
+    currentDate?: string | null
+    proposedDate: string
+    reason: string
+  }>
 }
 
 declare global {

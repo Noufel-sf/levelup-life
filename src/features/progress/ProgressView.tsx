@@ -40,6 +40,7 @@ import { RetroCard, RetroCardHeader, RetroCardTitle } from '@/components/8bit/Re
 import { RetroBadge } from '@/components/8bit/RetroBadge'
 import { RetroButton } from '@/components/8bit/RetroButton'
 import { RetroProgressBar } from '@/components/8bit/RetroProgressBar'
+import { PixelAvatar } from '@/components/character/PixelAvatar'
 import { UserProfileDTO, XPTransactionDTO, TaskDTO, HabitDTO, GoalDTO, AchievementDTO } from '@/types/ipc'
 
 interface ProgressViewProps {
@@ -336,14 +337,14 @@ export const ProgressView: React.FC<ProgressViewProps> = ({ profile }) => {
             </p>
           </div>
 
-          <div className="flex items-center space-x-3 bg-secondary/80 p-3 border-2 border-border shadow-sm">
-            <div className="w-9 h-9 bg-primary/20 border border-primary flex items-center justify-center text-primary shadow-[0_0_10px_rgba(168,85,247,0.4)]">
-              <TrendingUp className="w-5 h-5" />
+          <div className="flex items-center space-x-3 bg-secondary/80 p-2.5 sm:p-3 border-2 border-border shadow-sm">
+            <div className="w-10 h-10 border-2 border-primary flex items-center justify-center shadow-[0_0_12px_rgba(168,85,247,0.4)] overflow-hidden shrink-0">
+              <PixelAvatar avatarId={profile?.avatarId} size="md" showBorder={false} />
             </div>
             <div>
               <span className="text-[9px] font-mono text-muted-foreground block uppercase font-bold">Current Tier</span>
               <span className="font-pixel text-xs text-foreground font-bold">
-                Level {profile?.level || 1} <span className="text-primary font-mono text-[10px]">({profile?.title || 'Adventurer'})</span>
+                Level {profile?.level || 1} <span className="text-primary font-mono text-[10px]">«{profile?.title || 'Adventurer'}»</span>
               </span>
             </div>
           </div>

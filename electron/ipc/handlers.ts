@@ -568,6 +568,18 @@ export function registerIpcHandlers(mainWindow: BrowserWindow) {
     return await AIService.chat(message, history || [])
   })
 
+  ipcMain.handle('ai:generateWeeklyReview', async () => {
+    return await AIService.generateWeeklyReview()
+  })
+
+  ipcMain.handle('ai:suggestAdaptiveReschedule', async () => {
+    return await AIService.suggestAdaptiveReschedule()
+  })
+
+  ipcMain.handle('ai:applyAdaptiveReschedules', async (_, reschedules) => {
+    return await AIService.applyAdaptiveReschedules(reschedules)
+  })
+
   // RPG Achievements & Trophies
   ipcMain.handle('achievements:list', async () => {
     return await AchievementService.listAchievements()

@@ -1,0 +1,48 @@
+{
+  "appId": "com.lifeos.arcade",
+  "productName": "LIFE OS",
+  "copyright": "Copyright © 2026 LIFE OS Team",
+  "directories": {
+    "output": "release",
+    "buildResources": "public"
+  },
+  "files": [
+    "dist/**/*",
+    "dist-electron/**/*",
+    "electron/generated/prisma/**/*",
+    "package.json"
+  ],
+  "asar": true,
+  "asarUnpack": [
+    "**/electron/generated/prisma/**",
+    "**/*.node"
+  ],
+  "extraResources": [
+    {
+      "from": "electron/generated/prisma",
+      "to": "prisma-engine",
+      "filter": ["*.node", "schema.prisma"]
+    }
+  ],
+  "win": {
+    "target": [
+      {
+        "target": "nsis",
+        "arch": ["x64"]
+      },
+      {
+        "target": "portable",
+        "arch": ["x64"]
+      }
+    ],
+    "icon": "public/icon.png"
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "LIFE OS",
+    "uninstallDisplayName": "LIFE OS Arcade"
+  }
+}

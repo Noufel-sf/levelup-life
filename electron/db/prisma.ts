@@ -2,13 +2,35 @@ import path from "node:path";
 import fs from "node:fs";
 import { app } from "electron";
 
-// Dynamically load generated PrismaClient
-const prismaModulePath = fs.existsSync(
-  path.join(__dirname, "../electron/generated/prisma"),
-)
-  ? path.join(__dirname, "../electron/generated/prisma")
-  : path.resolve(process.cwd(), "electron/generated/prisma");
+// Dynamically resolve PrismaClient and Query Engine paths (dev & packaged)
+function resolvePrismaModulePath(): string {
+  const candidatePaths = [
+    path.join(__dirname, "../electron/generated/prisma"),
+    path.resolve(process.cwd(), "electron/generated/prisma"),
+    process.resourcesPath
+      ? path.join(process.resourcesPath, "app.asar.unpacked/electron/generated/prisma")
+      : "",
+    process.resourcesPath
+      ? path.join(process.resourcesPath, "prisma-engine")
+      : "",
+  ].filter(Boolean);
+
+  for (const p of candidatePaths) {
+    if (fs.existsSync(p)) {
+      return p;
+    }
+  }
+  return path.resolve(process.cwd(), "electron/generated/prisma");
+}
+
+const prismaModulePath = resolvePrismaModulePath();
 const { PrismaClient } = require(prismaModulePath);
+
+// Ensure query engine binary is located
+const enginePath = path.join(prismaModulePath, "query_engine-windows.dll.node");
+if (fs.existsSync(enginePath)) {
+  process.env.PRISMA_QUERY_ENGINE_LIBRARY = enginePath;
+}
 
 const isDev = !app || !app.isPackaged;
 const rawDbPath = isDev

@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { z } from 'zod'
 import { prisma } from '../db/prisma'
+import { XPService } from './XPService'
 
 export const DecomposedGoalSchema = z.object({
   title: z.string(),
@@ -45,6 +46,38 @@ export const DailyPlanSuggestionSchema = z.object({
 })
 
 export type DailyPlanSuggestion = z.infer<typeof DailyPlanSuggestionSchema>
+
+export const WeeklyReviewSchema = z.object({
+  grade: z.enum(['S', 'A', 'B', 'C', 'D']),
+  title: z.string(),
+  executiveSummary: z.string(),
+  completedCount: z.number(),
+  postponedCount: z.number(),
+  habitConsistencyPct: z.number(),
+  weeklyXp: z.number(),
+  strongestArea: z.string(),
+  bottlenecks: z.array(z.string()),
+  nextWeekDirectives: z.array(z.string()),
+  cyberQuote: z.string(),
+  bonusXpAwarded: z.number().default(75),
+})
+
+export type WeeklyReviewReport = z.infer<typeof WeeklyReviewSchema>
+
+export const AdaptiveRescheduleSchema = z.object({
+  analysis: z.string(),
+  reschedules: z.array(
+    z.object({
+      taskId: z.string(),
+      taskTitle: z.string(),
+      currentDate: z.string().nullable().optional(),
+      proposedDate: z.string(),
+      reason: z.string(),
+    })
+  ),
+})
+
+export type AdaptiveReschedulePlan = z.infer<typeof AdaptiveRescheduleSchema>
 
 export class AIService {
   private static async getClientAndModel() {
@@ -310,6 +343,283 @@ Keep responses concise, actionable, and formatted with clean markdown bullet poi
       }
 
       return goal
+    })
+  }
+
+  // Feature D: End-of-Week AI Retrospective & Tactical Debriefing
+  static async generateWeeklyReview(): Promise<WeeklyReviewReport> {
+    const { client, modelName } = await this.getClientAndModel()
+
+    const now = new Date()
+    const sevenDaysAgo = new Date(now)
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+    const sevenDaysAgoStr = `${sevenDaysAgo.getFullYear()}-${String(sevenDaysAgo.getMonth() + 1).padStart(2, '0')}-${String(sevenDaysAgo.getDate()).padStart(2, '0')}`
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+
+    // 1. Gather weekly telemetry from SQLite
+    const completedTasks = await prisma.task.findMany({
+      where: {
+        status: 'COMPLETED',
+        completedAt: { gte: sevenDaysAgo },
+      },
+      include: { skill: true, goal: true },
+    })
+
+    const pendingOrMissed = await prisma.task.findMany({
+      where: {
+        status: { not: 'COMPLETED' },
+        scheduledDate: { gte: sevenDaysAgoStr, lte: todayStr },
+      },
+    })
+
+    const habits = await prisma.habit.findMany({
+      where: { archived: false },
+      include: {
+        logs: {
+          where: {
+            date: { gte: sevenDaysAgoStr, lte: todayStr },
+            completed: true,
+          },
+        },
+      },
+    })
+
+    const weeklyTxs = await prisma.xPTransaction.findMany({
+      where: { createdAt: { gte: sevenDaysAgo } },
+    })
+
+    const totalXp = weeklyTxs.reduce((sum: number, tx: any) => sum + tx.amount, 0)
+    const totalHabitLogs = habits.reduce((sum: number, h: any) => sum + (h.logs?.length || 0), 0)
+    const expectedHabitLogs = Math.max(1, habits.length * 7)
+    const habitConsistencyPct = Math.min(100, Math.round((totalHabitLogs / expectedHabitLogs) * 100))
+
+    // Determine strongest skill
+    const skillCounts: Record<string, number> = {}
+    completedTasks.forEach((t: any) => {
+      const sName = t.skill?.name || 'General'
+      skillCounts[sName] = (skillCounts[sName] || 0) + t.xpReward
+    })
+    let strongestSkill = 'Discipline'
+    let maxSkillXp = 0
+    Object.entries(skillCounts).forEach(([sName, xp]) => {
+      if (xp > maxSkillXp) {
+        maxSkillXp = xp
+        strongestSkill = sName
+      }
+    })
+
+    // Calculate baseline grade
+    let grade: 'S' | 'A' | 'B' | 'C' | 'D' = 'B'
+    if (completedTasks.length >= 10 && habitConsistencyPct >= 70) grade = 'S'
+    else if (completedTasks.length >= 6 || habitConsistencyPct >= 50) grade = 'A'
+    else if (completedTasks.length >= 3) grade = 'B'
+    else grade = 'C'
+
+    let report: WeeklyReviewReport
+
+    if (!client) {
+      report = {
+        grade,
+        title: `Week ${Math.ceil(now.getDate() / 7)} Tactical Retrospective`,
+        executiveSummary: `You conquered ${completedTasks.length} missions this week and maintained a ${habitConsistencyPct}% habit consistency rate, harvesting +${totalXp} total Experience Points. Primary attribute momentum was channeled into ${strongestSkill}.`,
+        completedCount: completedTasks.length,
+        postponedCount: pendingOrMissed.length,
+        habitConsistencyPct,
+        weeklyXp: totalXp,
+        strongestArea: strongestSkill,
+        bottlenecks: pendingOrMissed.length > 3
+          ? [`${pendingOrMissed.length} missions went unfulfilled; avoid scheduling high workloads on consecutive days.`]
+          : ['Occasional task friction mid-week; maintain 25-minute Pomodoro focus blocks.'],
+        nextWeekDirectives: [
+          'Lock in top 3 daily missions each morning before tackling backlog.',
+          `Reinforce the ${habits[0]?.name || 'morning'} habit protocol early in the day.`,
+          'Deploy at least 2 milestones for your primary active quest.',
+        ],
+        cyberQuote: 'Discipline is the bridge between real-world goals and triumphant leveling up.',
+        bonusXpAwarded: 75,
+      }
+    } else {
+      const model = client.getGenerativeModel({
+        model: modelName,
+        generationConfig: {
+          responseMimeType: 'application/json',
+          temperature: 0.4,
+        },
+        systemInstruction: `You are Synth, AI tactical core of LIFE OS.
+Review the user's weekly productivity telemetry and generate an honest, motivating, cyberpunk arcade retrospective report with a grade (S, A, B, C, D).
+Return strictly valid JSON.`,
+      })
+
+      const prompt = `Generate a weekly review report for this telemetry:
+- Completed Missions: ${completedTasks.length} (Missions: ${completedTasks.map((t: any) => t.title).join(', ')})
+- Missed / Postponed: ${pendingOrMissed.length} (Missions: ${pendingOrMissed.map((t: any) => t.title).join(', ')})
+- Habit Protocols Consistency: ${habitConsistencyPct}%
+- Total Weekly XP Earned: +${totalXp} XP
+- Dominant Attribute: ${strongestSkill}
+
+Return JSON with exact keys:
+{
+  "grade": "S" | "A" | "B" | "C" | "D",
+  "title": string,
+  "executiveSummary": string,
+  "completedCount": number,
+  "postponedCount": number,
+  "habitConsistencyPct": number,
+  "weeklyXp": number,
+  "strongestArea": string,
+  "bottlenecks": string[],
+  "nextWeekDirectives": string[],
+  "cyberQuote": string,
+  "bonusXpAwarded": 75
+}`
+
+      try {
+        const response = await model.generateContent(prompt)
+        const text = response.response.text()
+        const parsed = JSON.parse(text)
+        report = WeeklyReviewSchema.parse(parsed)
+      } catch (err) {
+        console.error('Failed to parse Gemini weekly review:', err)
+        report = {
+          grade,
+          title: `Week ${Math.ceil(now.getDate() / 7)} Tactical Retrospective`,
+          executiveSummary: `You completed ${completedTasks.length} missions and maintained ${habitConsistencyPct}% habit consistency this week.`,
+          completedCount: completedTasks.length,
+          postponedCount: pendingOrMissed.length,
+          habitConsistencyPct,
+          weeklyXp: totalXp,
+          strongestArea: strongestSkill,
+          bottlenecks: ['Scope creep on uncompleted quests.'],
+          nextWeekDirectives: ['Prioritize single-task deep focus sessions.'],
+          cyberQuote: 'Small, consistent victories accumulate into unstoppable leveling up.',
+          bonusXpAwarded: 75,
+        }
+      }
+    }
+
+    // Award +75 review bonus XP
+    await XPService.awardXP(
+      75,
+      'WEEKLY_REVIEW',
+      `review-${Date.now()}`,
+      `Completed Tactical Weekly Retrospective // Grade ${report.grade}`
+    )
+
+    return report
+  }
+
+  // Feature E: Adaptive Rescheduler for Overdue & Overloaded Missions
+  static async suggestAdaptiveReschedule(): Promise<AdaptiveReschedulePlan> {
+    const { client, modelName } = await this.getClientAndModel()
+
+    const now = new Date()
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+
+    // 1. Find all overdue tasks
+    const overdueTasks = await prisma.task.findMany({
+      where: {
+        status: { not: 'COMPLETED' },
+        scheduledDate: { lt: todayStr },
+      },
+      include: { goal: true },
+      orderBy: { priority: 'desc' },
+    })
+
+    if (overdueTasks.length === 0) {
+      return {
+        analysis: 'All tactical missions are currently on schedule! No overdue or lapsed missions detected.',
+        reschedules: [],
+      }
+    }
+
+    // Calculate dates for the upcoming 6 days
+    const upcomingDays: string[] = []
+    for (let i = 0; i < 6; i++) {
+      const d = new Date(now)
+      d.setDate(d.getDate() + i)
+      upcomingDays.push(
+        `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+      )
+    }
+
+    if (!client) {
+      // Deterministic fallback: distribute evenly across upcoming days
+      const reschedules = overdueTasks.map((t: any, idx: number) => {
+        const targetDay = upcomingDays[idx % upcomingDays.length]
+        return {
+          taskId: t.id,
+          taskTitle: t.title,
+          currentDate: t.scheduledDate,
+          proposedDate: targetDay,
+          reason: `Balanced into timeline to prevent overload and maintain ${t.priority} quest velocity.`,
+        }
+      })
+
+      return {
+        analysis: `Detected ${overdueTasks.length} overdue missions. Rebalanced across the next ${upcomingDays.length} days based on capacity.`,
+        reschedules,
+      }
+    }
+
+    const model = client.getGenerativeModel({
+      model: modelName,
+      generationConfig: {
+        responseMimeType: 'application/json',
+        temperature: 0.3,
+      },
+      systemInstruction: `You are Synth, the Adaptive Rescheduling Intelligence of LIFE OS.
+Redistribute the user's overdue tasks across the upcoming days (${upcomingDays.join(', ')}).
+Prioritize HIGH and CRITICAL tasks earlier in the week. Avoid moving everything to tomorrow. Return valid JSON.`,
+    })
+
+    const prompt = `Redistribute these overdue missions across ${upcomingDays.join(', ')}:
+${JSON.stringify(overdueTasks.map((t: any) => ({ id: t.id, title: t.title, priority: t.priority, estimatedMin: t.estimatedMin, scheduledDate: t.scheduledDate })), null, 2)}
+
+Return JSON with exact structure:
+{
+  "analysis": string,
+  "reschedules": [
+    {
+      "taskId": string,
+      "taskTitle": string,
+      "currentDate": string,
+      "proposedDate": string,
+      "reason": string
+    }
+  ]
+}`
+
+    try {
+      const response = await model.generateContent(prompt)
+      const text = response.response.text()
+      const parsed = JSON.parse(text)
+      return AdaptiveRescheduleSchema.parse(parsed)
+    } catch (err) {
+      console.error('Failed to parse adaptive reschedule response:', err)
+      const reschedules = overdueTasks.map((t: any, idx: number) => ({
+        taskId: t.id,
+        taskTitle: t.title,
+        currentDate: t.scheduledDate,
+        proposedDate: upcomingDays[idx % upcomingDays.length],
+        reason: 'Evenly distributed to restore timeline momentum.',
+      }))
+      return {
+        analysis: `Auto-balanced ${overdueTasks.length} overdue missions across upcoming timeline.`,
+        reschedules,
+      }
+    }
+  }
+
+  // Feature F: Batch Apply Reschedules
+  static async applyAdaptiveReschedules(reschedules: Array<{ taskId: string; proposedDate: string }>) {
+    return await prisma.$transaction(async (tx: any) => {
+      for (const r of reschedules) {
+        await tx.task.update({
+          where: { id: r.taskId },
+          data: { scheduledDate: r.proposedDate },
+        })
+      }
+      return { success: true, count: reschedules.length }
     })
   }
 }

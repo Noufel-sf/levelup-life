@@ -71,7 +71,7 @@ function AppShell({
       case 'ai':
         return <AICompanionView onRefreshProfile={refreshProfile} onNavigateTab={setCurrentTab} />
       case 'settings':
-        return <SettingsView onTriggerQuote={triggerQuote} />
+        return <SettingsView onTriggerQuote={triggerQuote} profile={profile} refreshProfile={refreshProfile} />
       default:
         return <DashboardView profile={profile} onRefreshProfile={refreshProfile} />
     }

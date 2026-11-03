@@ -54,6 +54,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   aiDeployGoal: (data: any) => ipcRenderer.invoke('ai:deployGoal', data),
   aiSuggestDailyPlan: (dateStr?: string) => ipcRenderer.invoke('ai:suggestDailyPlan', dateStr),
   aiChat: (message: string, history?: any[]) => ipcRenderer.invoke('ai:chat', { message, history }),
+  aiGenerateWeeklyReview: () => ipcRenderer.invoke('ai:generateWeeklyReview'),
+  aiSuggestAdaptiveReschedule: () => ipcRenderer.invoke('ai:suggestAdaptiveReschedule'),
+  aiApplyAdaptiveReschedules: (reschedules: any[]) => ipcRenderer.invoke('ai:applyAdaptiveReschedules', reschedules),
 
   // RPG Achievements & Trophies
   listAchievements: () => ipcRenderer.invoke('achievements:list'),

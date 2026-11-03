@@ -24,10 +24,13 @@ import { RetroInput } from '@/components/8bit/RetroInput'
 import { RetroBadge } from '@/components/8bit/RetroBadge'
 import { WORLD_QUOTES, WorldQuote, getRandomQuote } from '@/lib/quotes'
 import { soundEngine } from '@/lib/sound'
-import { UserSettingsDTO } from '@/types/ipc'
+import { UserSettingsDTO, UserProfileDTO } from '@/types/ipc'
+import { CharacterCustomizer } from './CharacterCustomizer'
 
 interface SettingsViewProps {
   onTriggerQuote?: (quote?: WorldQuote) => void
+  profile?: UserProfileDTO | null
+  refreshProfile?: () => void
 }
 
 const LANGUAGES = [
@@ -59,7 +62,11 @@ const INTERVALS = [
   { value: 'off', label: 'Manual Only (From Titlebar)' },
 ]
 
-export const SettingsView: React.FC<SettingsViewProps> = ({ onTriggerQuote }) => {
+export const SettingsView: React.FC<SettingsViewProps> = ({
+  onTriggerQuote,
+  profile,
+  refreshProfile,
+}) => {
   const [settings, setSettings] = useState<UserSettingsDTO | null>(null)
   const [apiKey, setApiKey] = useState('')
   const [saved, setSaved] = useState(false)
@@ -213,6 +220,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onTriggerQuote }) =>
           </span>
         )}
       </div>
+
+      {/* Operative Identity & Prestige Title Customizer */}
+      <CharacterCustomizer
+        profile={profile || null}
+        onProfileUpdated={refreshProfile}
+      />
 
       <form onSubmit={handleSave} className="space-y-6">
         {/* Worldwide Wisdom & Notification Hub */}

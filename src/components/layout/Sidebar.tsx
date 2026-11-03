@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { RetroProgressBar } from '../8bit/RetroProgressBar'
 import { RetroBadge } from '../8bit/RetroBadge'
+import { PixelAvatar } from '@/components/character/PixelAvatar'
 import { soundEngine } from '@/lib/sound'
 import { UserProfileDTO } from '@/types/ipc'
 
@@ -137,8 +138,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab, profi
 
           <div className="flex items-center space-x-3 mb-2.5">
             <div className="relative shrink-0">
-              <div className="w-10 h-10 bg-secondary border-2 border-neon-pink flex items-center justify-center shadow-[0_0_12px_rgba(236,72,153,0.4)] p-0.5">
-                <img src="/logo.png" alt="Avatar" className="w-full h-full object-contain" />
+              <div className="w-10 h-10 bg-secondary border-2 border-neon-pink flex items-center justify-center shadow-[0_0_12px_rgba(236,72,153,0.4)] p-0.5 overflow-hidden">
+                <PixelAvatar avatarId={profile?.avatarId} size="md" showBorder={false} />
               </div>
               <div className="absolute -bottom-1.5 -right-1.5">
                 <RetroBadge variant="pink" pixelFont className="text-[7px] px-1 py-0 shadow-[0_0_8px_rgba(236,72,153,0.5)]">
