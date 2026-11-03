@@ -3,6 +3,7 @@ import path from 'node:path'
 import { prisma } from '../db/prisma'
 import { XPService } from '../services/XPService'
 import { WORLD_QUOTES, getRandomQuote, WorldQuote } from '../services/quotes'
+import { AIService } from '../services/aiService'
 
 export function registerIpcHandlers(mainWindow: BrowserWindow) {
   // Window controls
@@ -423,5 +424,22 @@ export function registerIpcHandlers(mainWindow: BrowserWindow) {
 
   ipcMain.handle('notifications:listQuotes', async () => {
     return WORLD_QUOTES
+  })
+
+  // Gemini AI Companion Engine
+  ipcMain.handle('ai:decomposeGoal', async (_, prompt: string) => {
+    return await AIService.decomposeGoal(prompt)
+  })
+
+  ipcMain.handle('ai:deployGoal', async (_, data) => {
+    return await AIService.deployDecomposedGoal(data)
+  })
+
+  ipcMain.handle('ai:suggestDailyPlan', async (_, dateStr: string) => {
+    return await AIService.suggestDailyPlan(dateStr || new Date().toISOString().split('T')[0])
+  })
+
+  ipcMain.handle('ai:chat', async (_, { message, history }) => {
+    return await AIService.chat(message, history || [])
   })
 }

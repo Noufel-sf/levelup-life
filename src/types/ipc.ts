@@ -149,6 +149,12 @@ export interface ElectronAPI {
   sendQuoteNotification: (quote?: any) => Promise<any>
   getRandomQuote: (languageFilter?: string) => Promise<any>
   listQuotes: () => Promise<any[]>
+
+  // Gemini AI Companion
+  aiDecomposeGoal: (prompt: string) => Promise<any>
+  aiDeployGoal: (data: any) => Promise<any>
+  aiSuggestDailyPlan: (dateStr?: string) => Promise<any>
+  aiChat: (message: string, history?: any[]) => Promise<string>
 }
 
 declare global {

@@ -46,4 +46,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   sendQuoteNotification: (quote?: any) => ipcRenderer.invoke('notifications:sendQuote', quote),
   getRandomQuote: (languageFilter?: string) => ipcRenderer.invoke('notifications:getRandomQuote', languageFilter),
   listQuotes: () => ipcRenderer.invoke('notifications:listQuotes'),
+
+  // Gemini AI Companion
+  aiDecomposeGoal: (prompt: string) => ipcRenderer.invoke('ai:decomposeGoal', prompt),
+  aiDeployGoal: (data: any) => ipcRenderer.invoke('ai:deployGoal', data),
+  aiSuggestDailyPlan: (dateStr?: string) => ipcRenderer.invoke('ai:suggestDailyPlan', dateStr),
+  aiChat: (message: string, history?: any[]) => ipcRenderer.invoke('ai:chat', { message, history }),
 })

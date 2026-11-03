@@ -79,7 +79,7 @@ export function App() {
       case 'progress':
         return <ProgressView profile={profile} />
       case 'ai':
-        return <AICompanionView />
+        return <AICompanionView onRefreshProfile={refreshProfile} onNavigateTab={setCurrentTab} />
       case 'settings':
         return <SettingsView onTriggerQuote={triggerQuote} />
       default:
