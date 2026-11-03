@@ -70,6 +70,14 @@ const DEFAULT_ACHIEVEMENTS = [
     category: 'Discipline',
     xpReward: 50,
   },
+  {
+    code: 'FOCUS_WARRIOR',
+    name: 'Neural Hyper-Focus',
+    description: 'Complete 3 or more Deep Work Cyberdeck Focus Sprints.',
+    icon: 'Crosshair',
+    category: 'Deep Work',
+    xpReward: 100,
+  },
 ]
 
 export class AchievementService {
@@ -219,6 +227,12 @@ export class AchievementService {
 
     // 7. Habit Master (3 or more active habits)
     if (habits.length >= 3) await tryUnlock('HABIT_MASTER')
+
+    // 8. Focus Warrior (3 or more deep work focus sprints)
+    const focusSessionsCount = await prisma.xPTransaction.count({
+      where: { sourceType: 'FOCUS_SESSION' },
+    })
+    if (focusSessionsCount >= 3) await tryUnlock('FOCUS_WARRIOR')
 
     return newlyUnlocked
   }

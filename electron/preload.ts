@@ -57,6 +57,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   listAchievements: () => ipcRenderer.invoke('achievements:list'),
   checkAchievements: () => ipcRenderer.invoke('achievements:check'),
 
+  // Deep Work & Focus Cyberdeck
+  completeFocusSession: (data: { durationMin: number; taskId?: string | null; customTitle?: string }) =>
+    ipcRenderer.invoke('focus:completeSession', data),
+  getFocusStats: () => ipcRenderer.invoke('focus:getStats'),
+
   // Data Vault: Backup & Restore
   exportData: () => ipcRenderer.invoke('data:export'),
   importData: () => ipcRenderer.invoke('data:import'),

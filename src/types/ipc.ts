@@ -160,6 +160,20 @@ export interface ElectronAPI {
   listAchievements: () => Promise<AchievementDTO[]>
   checkAchievements: () => Promise<AchievementDTO[]>
 
+  // Deep Work & Focus Cyberdeck
+  completeFocusSession: (data: { durationMin: number; taskId?: string | null; customTitle?: string }) => Promise<{
+    success: boolean
+    xpAwarded: number
+    profile: UserProfileDTO
+    task?: TaskDTO | null
+  }>
+  getFocusStats: () => Promise<{
+    todayCount: number
+    todayXp: number
+    totalSessions: number
+    totalFocusXp: number
+  }>
+
   // Data Vault: Backup & Restore
   exportData: () => Promise<{ canceled?: boolean; success?: boolean; filePath?: string; exportedAt?: string; stats?: any }>
   importData: () => Promise<{ canceled?: boolean; success?: boolean; stats?: any }>

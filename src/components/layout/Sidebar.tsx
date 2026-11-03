@@ -9,13 +9,14 @@ import {
   Bot,
   Settings,
   Sparkles,
+  Crosshair,
 } from 'lucide-react'
 import { RetroProgressBar } from '../8bit/RetroProgressBar'
 import { RetroBadge } from '../8bit/RetroBadge'
 import { soundEngine } from '@/lib/sound'
 import { UserProfileDTO } from '@/types/ipc'
 
-export type NavTab = 'dashboard' | 'calendar' | 'planner' | 'quests' | 'habits' | 'progress' | 'ai' | 'settings'
+export type NavTab = 'dashboard' | 'calendar' | 'planner' | 'quests' | 'habits' | 'progress' | 'focus' | 'ai' | 'settings'
 
 interface SidebarProps {
   currentTab: NavTab
@@ -75,6 +76,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab, profi
       color: 'text-neon-blue',
       activeBg: 'bg-neon-blue/15 text-neon-blue border-l-2 border-neon-blue shadow-[inset_0_0_12px_rgba(59,130,246,0.2)]',
       badgeVariant: 'cyan' as const,
+    },
+    {
+      id: 'focus' as NavTab,
+      label: 'Focus Deck',
+      icon: Crosshair,
+      color: 'text-neon-pink',
+      activeBg: 'bg-neon-pink/15 text-neon-pink border-l-2 border-neon-pink shadow-[inset_0_0_12px_rgba(236,72,153,0.2)]',
+      badge: '25M',
+      badgeVariant: 'pink' as const,
     },
     {
       id: 'ai' as NavTab,

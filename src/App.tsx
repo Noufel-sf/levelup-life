@@ -7,6 +7,7 @@ import { PlannerView } from './features/planner/PlannerView'
 import { QuestsView } from './features/quests/QuestsView'
 import { HabitsView } from './features/habits/HabitsView'
 import { ProgressView } from './features/progress/ProgressView'
+import { FocusView } from './features/focus/FocusView'
 import { AICompanionView } from './features/ai-companion/AICompanionView'
 import { SettingsView } from './features/settings/SettingsView'
 import { QuoteNotificationToast } from './components/notifications/QuoteNotificationToast'
@@ -126,6 +127,8 @@ export function App() {
         return <HabitsView onRefreshProfile={refreshProfile} />
       case 'progress':
         return <ProgressView profile={profile} />
+      case 'focus':
+        return <FocusView profile={profile} onRefreshProfile={refreshProfile} />
       case 'ai':
         return <AICompanionView onRefreshProfile={refreshProfile} onNavigateTab={setCurrentTab} />
       case 'settings':

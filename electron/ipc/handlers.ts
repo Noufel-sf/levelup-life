@@ -56,6 +56,81 @@ export function registerIpcHandlers(mainWindow: BrowserWindow) {
     })
   })
 
+  // Deep Work & Focus Cyberdeck
+  ipcMain.handle('focus:completeSession', async (_, { durationMin, taskId, customTitle }) => {
+    const profile = await prisma.userProfile.findFirst({ include: { skills: true } })
+    if (!profile) throw new Error("Profile not found")
+
+    // Locate the Focus skill
+    const focusSkill = profile.skills.find((s: any) => s.name.toLowerCase() === 'focus')
+
+    // XP calculation: roughly 1 XP per minute of focus, minimum 15 XP for a sprint
+    const xpReward = Math.max(15, Math.round(durationMin * 1.0))
+    const txSourceId = `focus-${Date.now()}`
+    const label = customTitle ? `Deep Work: ${customTitle}` : `Deep Work Focus Sprint (${durationMin}m)`
+
+    const updatedProfile = await XPService.awardXP(
+      xpReward,
+      'FOCUS_SESSION',
+      txSourceId,
+      label,
+      focusSkill?.id
+    )
+
+    let taskResult = null
+    if (taskId) {
+      const task = await prisma.task.findUnique({ where: { id: taskId } })
+      if (task && task.status !== 'COMPLETED') {
+        taskResult = await prisma.task.update({
+          where: { id: taskId },
+          data: { status: 'COMPLETED', completedAt: new Date() },
+        })
+        await XPService.awardXP(
+          task.xpReward,
+          'TASK',
+          task.id,
+          `Completed during Focus: ${task.title}`,
+          task.skillId || focusSkill?.id
+        )
+      }
+    }
+
+    return {
+      success: true,
+      xpAwarded: xpReward,
+      profile: updatedProfile,
+      task: taskResult,
+    }
+  })
+
+  ipcMain.handle('focus:getStats', async () => {
+    const today = new Date().toISOString().split('T')[0]
+    const todayTxs = await prisma.xPTransaction.findMany({
+      where: {
+        sourceType: 'FOCUS_SESSION',
+        createdAt: {
+          gte: new Date(`${today}T00:00:00.000Z`),
+        },
+      },
+    })
+
+    const totalSessions = await prisma.xPTransaction.count({
+      where: { sourceType: 'FOCUS_SESSION' },
+    })
+
+    const totalXp = await prisma.xPTransaction.aggregate({
+      where: { sourceType: 'FOCUS_SESSION' },
+      _sum: { amount: true },
+    })
+
+    return {
+      todayCount: todayTxs.length,
+      todayXp: todayTxs.reduce((sum: number, tx: any) => sum + tx.amount, 0),
+      totalSessions,
+      totalFocusXp: totalXp._sum.amount || 0,
+    }
+  })
+
   // Goals
   ipcMain.handle('goals:list', async () => {
     return await prisma.goal.findMany({

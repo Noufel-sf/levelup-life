@@ -15,6 +15,7 @@ import {
   Play,
   ArrowRight,
   X,
+  Crosshair,
 } from 'lucide-react'
 import { soundEngine } from '@/lib/sound'
 import { NavTab } from '@/components/layout/Sidebar'
@@ -147,6 +148,18 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       },
     },
     {
+      id: 'nav-focus',
+      title: 'Go to Focus Cyberdeck',
+      subtitle: 'Pomodoro 25m sprints & deep work runner',
+      icon: Crosshair,
+      category: 'NAVIGATION',
+      color: 'text-neon-pink',
+      action: () => {
+        onNavigate('focus')
+        onClose()
+      },
+    },
+    {
       id: 'nav-ai',
       title: 'Go to AI Companion',
       subtitle: 'Quest architect & weekly AI mentor',
@@ -174,6 +187,18 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
 
   // Action commands
   const actionCommands: CommandItem[] = [
+    {
+      id: 'act-focus',
+      title: 'Initiate 25m Deep Work Sprint',
+      subtitle: 'Launch Pomodoro timer and synthesize Focus XP',
+      icon: Crosshair,
+      category: 'ACTIONS',
+      color: 'text-neon-pink',
+      action: () => {
+        onNavigate('focus')
+        onClose()
+      },
+    },
     {
       id: 'act-quote',
       title: 'Draw Global Wisdom Quote',
@@ -403,3 +428,4 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     </div>
   )
 }
+
