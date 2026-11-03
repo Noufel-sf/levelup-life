@@ -179,3 +179,13 @@
 .arcade-box-green {
   box-shadow: 0 0 0 1px #a3e635, 0 0 15px rgba(163, 230, 53, 0.35);
 }
+
+/* Electron Window Drag Regions (Global) */
+.app-drag-region {
+  -webkit-app-region: drag;
+  user-select: none;
+}
+
+.no-drag {
+  -webkit-app-region: no-drag;
+}
