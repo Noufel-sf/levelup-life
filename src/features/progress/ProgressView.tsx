@@ -15,6 +15,15 @@ import {
   Target,
   CheckSquare,
   Activity,
+  Trophy,
+  Lock,
+  Unlock,
+  RefreshCw,
+  Heart,
+  Brain,
+  Crosshair,
+  Users,
+  Palette,
 } from 'lucide-react'
 import {
   AreaChart,
@@ -31,14 +40,14 @@ import { RetroCard, RetroCardHeader, RetroCardTitle } from '@/components/8bit/Re
 import { RetroBadge } from '@/components/8bit/RetroBadge'
 import { RetroButton } from '@/components/8bit/RetroButton'
 import { RetroProgressBar } from '@/components/8bit/RetroProgressBar'
-import { UserProfileDTO, XPTransactionDTO, TaskDTO, HabitDTO, GoalDTO } from '@/types/ipc'
+import { UserProfileDTO, XPTransactionDTO, TaskDTO, HabitDTO, GoalDTO, AchievementDTO } from '@/types/ipc'
 
 interface ProgressViewProps {
   profile: UserProfileDTO | null
 }
 
 type Timeframe = '7d' | '14d' | '30d'
-type AnalyticsViewTab = 'xp-curve' | 'missions' | 'habits-heatmap'
+type AnalyticsViewTab = 'xp-curve' | 'missions' | 'habits-heatmap' | 'skills' | 'achievements'
 
 const getLocalDateStr = (d: Date = new Date()) => {
   const year = d.getFullYear()
@@ -52,20 +61,43 @@ export const ProgressView: React.FC<ProgressViewProps> = ({ profile }) => {
   const [tasks, setTasks] = useState<TaskDTO[]>([])
   const [habits, setHabits] = useState<HabitDTO[]>([])
   const [goals, setGoals] = useState<GoalDTO[]>([])
+  const [achievements, setAchievements] = useState<AchievementDTO[]>([])
 
   const [activeTab, setActiveTab] = useState<AnalyticsViewTab>('xp-curve')
   const [timeframe, setTimeframe] = useState<Timeframe>('14d')
   const [xpChartMode, setXpChartMode] = useState<'cumulative' | 'daily'>('cumulative')
   const [sourceFilter, setSourceFilter] = useState<string>('ALL')
+  const [isScanningAchievements, setIsScanningAchievements] = useState(false)
 
-  useEffect(() => {
+  const loadData = () => {
     if (window.electronAPI) {
       window.electronAPI.getXPHistory(500).then((res) => setHistory(res || []))
       window.electronAPI.getTasks().then((res) => setTasks(res || []))
       window.electronAPI.getHabits().then((res) => setHabits(res || []))
       window.electronAPI.getGoals().then((res) => setGoals(res || []))
+      if (window.electronAPI.listAchievements) {
+        window.electronAPI.listAchievements().then((res) => setAchievements(res || []))
+      }
     }
+  }
+
+  useEffect(() => {
+    loadData()
   }, [])
+
+  const handleScanAchievements = async () => {
+    if (!window.electronAPI?.checkAchievements) return
+    setIsScanningAchievements(true)
+    try {
+      await window.electronAPI.checkAchievements()
+      const updated = await window.electronAPI.listAchievements()
+      setAchievements(updated || [])
+    } catch (err) {
+      console.error('Failed to scan achievements:', err)
+    } finally {
+      setIsScanningAchievements(false)
+    }
+  }
 
   // Days count for the active timeframe
   const daysCount = timeframe === '7d' ? 7 : timeframe === '14d' ? 14 : 30
@@ -102,6 +134,7 @@ export const ProgressView: React.FC<ProgressViewProps> = ({ profile }) => {
         TASK: 0,
         HABIT: 0,
         GOAL: 0,
+        ACHIEVEMENT: 0,
         OTHER: 0,
       }
 
@@ -214,6 +247,8 @@ export const ProgressView: React.FC<ProgressViewProps> = ({ profile }) => {
   const totalGoals = goals.length
   const goalCompletionRate = totalGoals > 0 ? Math.round((totalCompletedGoals / totalGoals) * 100) : 0
 
+  const unlockedAchievementsCount = achievements.filter((a) => a.isUnlocked).length
+
   // 5. Filtered transaction ledger
   const filteredHistory = useMemo(() => {
     if (sourceFilter === 'ALL') return history
@@ -287,17 +322,17 @@ export const ProgressView: React.FC<ProgressViewProps> = ({ profile }) => {
           <div>
             <div className="flex items-center gap-2 mb-1.5">
               <span className="text-[10px] font-mono px-2 py-0.5 border font-bold text-primary border-primary/60 bg-primary/15 shadow-[0_0_8px_rgba(168,85,247,0.3)]">
-                [ TELEMETRY CORE ]
+                [ RPG PROGRESSION CORE ]
               </span>
               <span className="text-muted-foreground font-mono text-[10px]">//</span>
-              <span className="text-[10px] font-mono text-neon-cyan font-bold">PROGRESSION & ANALYTICS</span>
+              <span className="text-[10px] font-mono text-neon-cyan font-bold">TELEMETRY & TROPHY HALL</span>
             </div>
 
             <h1 className="text-sm sm:text-base md:text-lg font-bold tracking-wider text-foreground font-pixel leading-snug">
               CHARACTER PROGRESSION & ANALYTICS
             </h1>
             <p className="text-xs text-muted-foreground mt-1 font-mono">
-              Auditable XP telemetry, progression velocity curves, and milestone records across time.
+              Auditable XP telemetry, skill tree attribute matrices, habit heatmaps, and unlockable RPG trophies.
             </p>
           </div>
 
@@ -338,15 +373,15 @@ export const ProgressView: React.FC<ProgressViewProps> = ({ profile }) => {
           </div>
 
           <div className="bg-secondary/70 p-3 border border-neon-yellow/40 shadow-[0_0_12px_rgba(250,204,21,0.15)]">
-            <span className="text-[9px] font-mono text-muted-foreground block uppercase font-bold">Daily Average XP</span>
+            <span className="text-[9px] font-mono text-muted-foreground block uppercase font-bold">Trophies Unlocked</span>
             <span className="text-sm sm:text-base font-pixel text-neon-yellow font-bold">
-              +{dailyAverage} XP/Day
+              {unlockedAchievementsCount} / {achievements.length} <span className="text-[10px] text-muted-foreground font-mono">Trophies</span>
             </span>
           </div>
         </div>
       </div>
 
-      {/* Analytics Suite Tabs */}
+      {/* Analytics & RPG Navigation Tabs */}
       <div className="flex flex-wrap items-center gap-2 border-b border-border pb-2">
         <button
           onClick={() => setActiveTab('xp-curve')}
@@ -382,6 +417,30 @@ export const ProgressView: React.FC<ProgressViewProps> = ({ profile }) => {
         >
           <Flame className="w-3.5 h-3.5" />
           <span>30-Day Habit Heatmap</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('skills')}
+          className={`flex items-center gap-2 px-3 py-1.5 font-mono text-xs font-bold uppercase tracking-wider border transition-all cursor-pointer ${
+            activeTab === 'skills'
+              ? 'bg-primary/20 text-primary border-primary shadow-[0_0_12px_rgba(168,85,247,0.3)]'
+              : 'bg-secondary text-muted-foreground border-border hover:border-muted-foreground'
+          }`}
+        >
+          <Zap className="w-3.5 h-3.5" />
+          <span>Skill Tree Matrix</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('achievements')}
+          className={`flex items-center gap-2 px-3 py-1.5 font-mono text-xs font-bold uppercase tracking-wider border transition-all cursor-pointer ${
+            activeTab === 'achievements'
+              ? 'bg-neon-yellow/20 text-neon-yellow border-neon-yellow shadow-[0_0_12px_rgba(250,204,21,0.3)]'
+              : 'bg-secondary text-muted-foreground border-border hover:border-muted-foreground'
+          }`}
+        >
+          <Trophy className="w-3.5 h-3.5" />
+          <span>Trophy Hall ({unlockedAchievementsCount}/{achievements.length})</span>
         </button>
       </div>
 
@@ -633,6 +692,220 @@ export const ProgressView: React.FC<ProgressViewProps> = ({ profile }) => {
         </RetroCard>
       )}
 
+      {/* TAB 4: Skill Tree Matrix */}
+      {activeTab === 'skills' && (
+        <RetroCard variant="accent-purple" glow topStripe className="p-5">
+          <RetroCardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border">
+            <div className="flex items-center space-x-2.5">
+              <div className="w-7 h-7 bg-primary/20 border border-primary flex items-center justify-center text-primary shadow-[0_0_8px_rgba(168,85,247,0.4)]">
+                <Zap className="w-4 h-4" />
+              </div>
+              <div>
+                <RetroCardTitle pixelFont>RPG CHARACTER ATTRIBUTE MATRIX</RetroCardTitle>
+                <p className="text-[10px] text-muted-foreground font-mono mt-0.5">
+                  Every mission and habit completed strengthens specific real-world RPG attributes.
+                </p>
+              </div>
+            </div>
+
+            <RetroBadge variant="primary" pixelFont className="text-[7px]">
+              {profile?.skills?.length || 0} ATTRIBUTES TRACKED
+            </RetroBadge>
+          </RetroCardHeader>
+
+          {/* Skill Cards Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 py-3">
+            {profile?.skills?.map((skill, idx) => {
+              const skillIcons: Record<string, any> = {
+                Knowledge: Brain,
+                Focus: Crosshair,
+                Discipline: Target,
+                Health: Heart,
+                Creativity: Palette,
+                Social: Users,
+              }
+              const IconComp = skillIcons[skill.name] || Zap
+
+              const currentProgress = skill.xp % 100
+              const tasksTagged = tasks.filter((t) => t.skillId === skill.id && t.status === 'COMPLETED').length
+
+              const borderAccents = [
+                'border-primary/60 hover:border-primary shadow-[0_0_15px_rgba(168,85,247,0.2)]',
+                'border-neon-cyan/60 hover:border-neon-cyan shadow-[0_0_15px_rgba(34,211,238,0.2)]',
+                'border-neon-green/60 hover:border-neon-green shadow-[0_0_15px_rgba(163,230,53,0.2)]',
+                'border-neon-yellow/60 hover:border-neon-yellow shadow-[0_0_15px_rgba(250,204,21,0.2)]',
+                'border-neon-pink/60 hover:border-neon-pink shadow-[0_0_15px_rgba(236,72,153,0.2)]',
+              ]
+              const cardBorder = borderAccents[idx % borderAccents.length]
+
+              return (
+                <div
+                  key={skill.id}
+                  className={`bg-secondary/80 border-2 p-4 transition-all duration-200 relative group ${cardBorder}`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center space-x-2.5">
+                      <div className="w-8 h-8 bg-card border border-border flex items-center justify-center text-foreground group-hover:scale-110 transition-transform">
+                        <IconComp className="w-4 h-4 text-primary" />
+                      </div>
+                      <div>
+                        <span className="font-pixel text-xs text-foreground block font-bold">
+                          {skill.name}
+                        </span>
+                        <span className="text-[9px] font-mono text-muted-foreground">
+                          {skill.xp} Lifetime XP
+                        </span>
+                      </div>
+                    </div>
+
+                    <RetroBadge variant="cyan" pixelFont className="text-[8px] py-0.5 px-2">
+                      Lv.{skill.level}
+                    </RetroBadge>
+                  </div>
+
+                  {/* XP Progress Bar */}
+                  <div className="space-y-1 my-3">
+                    <div className="flex justify-between items-center text-[9px] font-mono">
+                      <span className="text-muted-foreground">Progression to Lv.{skill.level + 1}</span>
+                      <span className="text-neon-cyan font-bold">{currentProgress} / 100 XP</span>
+                    </div>
+                    <RetroProgressBar value={currentProgress} max={100} variant="cyan" />
+                  </div>
+
+                  {/* Footer details */}
+                  <div className="pt-2 border-t border-border/80 flex items-center justify-between text-[9px] font-mono text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3 text-neon-green" />
+                      {tasksTagged} Completed Sprints
+                    </span>
+                    <span className="text-neon-pink">TIER {skill.level}</span>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </RetroCard>
+      )}
+
+      {/* TAB 5: Trophy Hall & Achievements */}
+      {activeTab === 'achievements' && (
+        <RetroCard variant="accent-yellow" glow topStripe className="p-5">
+          <RetroCardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border">
+            <div className="flex items-center space-x-2.5">
+              <div className="w-7 h-7 bg-neon-yellow/20 border border-neon-yellow flex items-center justify-center text-neon-yellow shadow-[0_0_8px_rgba(250,204,21,0.4)]">
+                <Trophy className="w-4 h-4" />
+              </div>
+              <div>
+                <RetroCardTitle pixelFont>RPG TROPHY HALL</RetroCardTitle>
+                <p className="text-[10px] text-muted-foreground font-mono mt-0.5">
+                  Accomplish real productivity breakthroughs to unlock permanent arcade trophies and bonus XP.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2.5">
+              <span className="font-pixel text-[10px] text-neon-yellow">
+                {unlockedAchievementsCount} / {achievements.length} UNLOCKED
+              </span>
+              <RetroButton
+                variant="yellow"
+                size="sm"
+                pixelFont
+                onClick={handleScanAchievements}
+                disabled={isScanningAchievements}
+              >
+                <RefreshCw className={`w-3.5 h-3.5 mr-1 ${isScanningAchievements ? 'animate-spin' : ''}`} />
+                {isScanningAchievements ? 'Scanning...' : 'Check Trophies'}
+              </RetroButton>
+            </div>
+          </RetroCardHeader>
+
+          {/* Achievements Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 py-3">
+            {achievements.map((ach) => {
+              return (
+                <div
+                  key={ach.id}
+                  className={`border-2 p-3.5 transition-all duration-200 relative group ${
+                    ach.isUnlocked
+                      ? 'bg-secondary/90 border-neon-yellow shadow-[0_0_20px_rgba(250,204,21,0.25)]'
+                      : 'bg-card/50 border-border opacity-70 hover:opacity-100'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <div className="flex items-start space-x-2.5">
+                      <div
+                        className={`w-9 h-9 border-2 flex items-center justify-center shrink-0 ${
+                          ach.isUnlocked
+                            ? 'bg-neon-yellow/20 border-neon-yellow text-neon-yellow shadow-[0_0_10px_rgba(250,204,21,0.4)]'
+                            : 'bg-secondary border-border text-muted-foreground'
+                        }`}
+                      >
+                        {ach.isUnlocked ? (
+                          <Trophy className="w-5 h-5 animate-pulse" />
+                        ) : (
+                          <Lock className="w-4 h-4" />
+                        )}
+                      </div>
+
+                      <div>
+                        <div className="flex items-center space-x-1.5 flex-wrap">
+                          <span
+                            className={`font-pixel text-xs tracking-wide ${
+                              ach.isUnlocked ? 'text-neon-yellow font-bold' : 'text-foreground'
+                            }`}
+                          >
+                            {ach.name}
+                          </span>
+                        </div>
+                        <span className="text-[9px] font-mono text-muted-foreground uppercase">
+                          [{ach.category}]
+                        </span>
+                      </div>
+                    </div>
+
+                    <RetroBadge
+                      variant={ach.isUnlocked ? 'gold' : 'muted'}
+                      pixelFont
+                      className="text-[7px] shrink-0"
+                    >
+                      +{ach.xpReward} XP
+                    </RetroBadge>
+                  </div>
+
+                  <p className="text-xs text-muted-foreground font-mono leading-relaxed pl-1 mb-2">
+                    {ach.description}
+                  </p>
+
+                  <div className="pt-2 border-t border-border/70 flex items-center justify-between text-[9px] font-mono">
+                    {ach.isUnlocked ? (
+                      <span className="text-neon-green flex items-center gap-1 font-bold">
+                        <CheckCircle2 className="w-3 h-3 text-neon-green" />
+                        UNLOCKED{' '}
+                        {ach.unlockedAt &&
+                          `• ${new Date(ach.unlockedAt).toLocaleDateString('en', {
+                            month: 'short',
+                            day: 'numeric',
+                          })}`}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground flex items-center gap-1">
+                        <Lock className="w-3 h-3" />
+                        LOCKED OBJECTIVE
+                      </span>
+                    )}
+
+                    <span className="font-pixel text-[8px] text-primary">
+                      {ach.isUnlocked ? 'TROPHY CLAIMED' : 'CHALLENGE PENDING'}
+                    </span>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </RetroCard>
+      )}
+
       {/* XP Source Breakdown Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="p-3 bg-card border-2 border-neon-cyan/50 hover:border-neon-cyan shadow-[0_0_15px_rgba(34,211,238,0.12)]">
@@ -670,13 +943,13 @@ export const ProgressView: React.FC<ProgressViewProps> = ({ profile }) => {
 
         <div className="p-3 bg-card border-2 border-neon-yellow/50 hover:border-neon-yellow shadow-[0_0_15px_rgba(250,204,21,0.12)]">
           <div className="flex items-center justify-between mb-1">
-            <span className="font-pixel text-[9px] text-neon-yellow">ACHIEVEMENTS</span>
-            <Sparkles className="w-3.5 h-3.5 text-neon-yellow" />
+            <span className="font-pixel text-[9px] text-neon-yellow">TROPHIES & BONUSES</span>
+            <Trophy className="w-3.5 h-3.5 text-neon-yellow" />
           </div>
           <p className="font-mono text-base font-bold text-foreground">
-            +{sourceBreakdown.OTHER} XP
+            +{sourceBreakdown.ACHIEVEMENT || sourceBreakdown.OTHER} XP
           </p>
-          <p className="text-[9px] text-muted-foreground font-mono mt-0.5">Bonuses & secret milestones</p>
+          <p className="text-[9px] text-muted-foreground font-mono mt-0.5">Achievement bonuses claimed</p>
         </div>
       </div>
 
@@ -693,7 +966,7 @@ export const ProgressView: React.FC<ProgressViewProps> = ({ profile }) => {
 
           {/* Filter Pills */}
           <div className="flex flex-wrap items-center gap-1.5 font-mono text-xs">
-            {['ALL', 'TASK', 'HABIT', 'GOAL'].map((src) => (
+            {['ALL', 'TASK', 'HABIT', 'GOAL', 'ACHIEVEMENT'].map((src) => (
               <button
                 key={src}
                 type="button"

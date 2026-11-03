@@ -52,4 +52,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   aiDeployGoal: (data: any) => ipcRenderer.invoke('ai:deployGoal', data),
   aiSuggestDailyPlan: (dateStr?: string) => ipcRenderer.invoke('ai:suggestDailyPlan', dateStr),
   aiChat: (message: string, history?: any[]) => ipcRenderer.invoke('ai:chat', { message, history }),
+
+  // RPG Achievements & Trophies
+  listAchievements: () => ipcRenderer.invoke('achievements:list'),
+  checkAchievements: () => ipcRenderer.invoke('achievements:check'),
 })

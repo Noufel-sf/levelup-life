@@ -4,6 +4,7 @@ import { prisma } from '../db/prisma'
 import { XPService } from '../services/XPService'
 import { WORLD_QUOTES, getRandomQuote, WorldQuote } from '../services/quotes'
 import { AIService } from '../services/aiService'
+import { AchievementService } from '../services/achievementService'
 
 export function registerIpcHandlers(mainWindow: BrowserWindow) {
   // Window controls
@@ -441,5 +442,14 @@ export function registerIpcHandlers(mainWindow: BrowserWindow) {
 
   ipcMain.handle('ai:chat', async (_, { message, history }) => {
     return await AIService.chat(message, history || [])
+  })
+
+  // RPG Achievements & Trophies
+  ipcMain.handle('achievements:list', async () => {
+    return await AchievementService.listAchievements()
+  })
+
+  ipcMain.handle('achievements:check', async () => {
+    return await AchievementService.checkAndUnlockAchievements()
   })
 }

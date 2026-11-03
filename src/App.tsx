@@ -10,13 +10,29 @@ import { ProgressView } from './features/progress/ProgressView'
 import { AICompanionView } from './features/ai-companion/AICompanionView'
 import { SettingsView } from './features/settings/SettingsView'
 import { QuoteNotificationToast } from './components/notifications/QuoteNotificationToast'
+import { AchievementToast } from './components/notifications/AchievementToast'
 import { WorldQuote, getRandomQuote } from './lib/quotes'
-import { UserProfileDTO } from './types/ipc'
+import { UserProfileDTO, AchievementDTO } from './types/ipc'
 
 export function App() {
   const [currentTab, setCurrentTab] = useState<NavTab>('dashboard')
   const [profile, setProfile] = useState<UserProfileDTO | null>(null)
   const [activeQuote, setActiveQuote] = useState<WorldQuote | null>(null)
+  const [activeAchievement, setActiveAchievement] = useState<AchievementDTO | null>(null)
+
+  const checkAchievements = async () => {
+    if (window.electronAPI?.checkAchievements) {
+      try {
+        const newlyUnlocked = await window.electronAPI.checkAchievements()
+        if (newlyUnlocked && newlyUnlocked.length > 0) {
+          setActiveAchievement(newlyUnlocked[0])
+          refreshProfile()
+        }
+      } catch (err) {
+        console.error('Failed to check achievements:', err)
+      }
+    }
+  }
 
   const refreshProfile = async () => {
     if (window.electronAPI) {
@@ -45,6 +61,7 @@ export function App() {
 
   useEffect(() => {
     refreshProfile()
+    checkAchievements()
 
     // Setup periodic notification timer based on user preference
     const setupTimer = () => {
@@ -115,6 +132,12 @@ export function App() {
         quote={activeQuote}
         onClose={() => setActiveQuote(null)}
         onNextQuote={() => triggerQuote()}
+      />
+
+      {/* Global Achievement Unlocked Toast */}
+      <AchievementToast
+        achievement={activeAchievement}
+        onClose={() => setActiveAchievement(null)}
       />
     </div>
   )

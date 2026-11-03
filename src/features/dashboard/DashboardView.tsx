@@ -33,6 +33,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ profile, onRefresh
   const [newTaskDuration, setNewTaskDuration] = useState(45)
   const [newTaskPriority, setNewTaskPriority] = useState('MEDIUM')
   const [newTaskDate, setNewTaskDate] = useState('')
+  const [newTaskSkillId, setNewTaskSkillId] = useState<string>('')
   const [isAddingTask, setIsAddingTask] = useState(false)
   const [notification, setNotification] = useState<string | null>(null)
 
@@ -111,9 +112,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ profile, onRefresh
       estimatedMin: newTaskDuration,
       priority: newTaskPriority,
       xpReward: 20,
+      skillId: newTaskSkillId || undefined,
     })
 
     setNewTaskTitle('')
+    setNewTaskSkillId('')
     setIsAddingTask(false)
     loadData()
     showToast('New Mission Deployed to Timeline!')
@@ -379,7 +382,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ profile, onRefresh
                   autoFocus
                   required
                 />
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
                   <div>
                     <label className="block text-[10px] font-mono text-muted-foreground mb-1">
                       Scheduled Date
@@ -421,6 +424,23 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ profile, onRefresh
                       <option value="MEDIUM">Medium</option>
                       <option value="HIGH">High</option>
                       <option value="CRITICAL">Critical</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-mono text-muted-foreground mb-1">
+                      Target Attribute
+                    </label>
+                    <select
+                      value={newTaskSkillId}
+                      onChange={(e) => setNewTaskSkillId(e.target.value)}
+                      className="w-full bg-card border border-border px-2 py-1.5 text-xs font-mono text-foreground focus:outline-none"
+                    >
+                      <option value="">General (No Attribute)</option>
+                      {profile?.skills?.map((skill) => (
+                        <option key={skill.id} value={skill.id}>
+                          {skill.name} (Lv.{skill.level})
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>
@@ -495,6 +515,18 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ profile, onRefresh
                             <span className={`text-[8px] font-mono px-1.5 py-0.2 border uppercase ${dateInfo.color}`}>
                               {dateInfo.text}
                             </span>
+                            {task.skill && (
+                              <span
+                                className="text-[8px] font-mono px-1.5 py-0.2 border uppercase"
+                                style={{
+                                  color: task.skill.color || '#22d3ee',
+                                  borderColor: `${task.skill.color || '#22d3ee'}66`,
+                                  backgroundColor: `${task.skill.color || '#22d3ee'}15`,
+                                }}
+                              >
+                                {task.skill.name}
+                              </span>
+                            )}
                           </div>
 
                           <div className="flex items-center space-x-2.5 mt-1 text-[10px] font-mono text-muted-foreground">

@@ -155,6 +155,22 @@ export interface ElectronAPI {
   aiDeployGoal: (data: any) => Promise<any>
   aiSuggestDailyPlan: (dateStr?: string) => Promise<any>
   aiChat: (message: string, history?: any[]) => Promise<string>
+
+  // RPG Achievements & Trophies
+  listAchievements: () => Promise<AchievementDTO[]>
+  checkAchievements: () => Promise<AchievementDTO[]>
+}
+
+export interface AchievementDTO {
+  id: string
+  code: string
+  name: string
+  description: string
+  icon: string
+  category: string
+  xpReward: number
+  isUnlocked: boolean
+  unlockedAt?: string | null
 }
 
 declare global {
