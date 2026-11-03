@@ -298,7 +298,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onRefreshProfile }) 
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
-            <span className="font-mono text-xs font-bold text-foreground px-2">
+            <span className="font-pixel text-[10px] font-bold text-foreground px-2 tracking-wide">
               {formatRange()}
             </span>
           </div>
@@ -462,7 +462,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onRefreshProfile }) 
         <div className="p-4 bg-card border-2 border-neon-cyan shadow-[0_0_20px_rgba(34,211,238,0.25)] relative">
           <span className="absolute -top-1 -right-1 w-2 h-2 bg-neon-cyan shadow-[0_0_6px_#22d3ee]" />
           <div className="flex items-center justify-between pb-3 border-b border-neon-cyan/40 mb-3">
-            <span className="font-mono text-xs font-bold text-neon-cyan uppercase">
+            <span className="font-pixel text-[9px] font-bold text-neon-cyan uppercase tracking-wider">
               {currentDate.toLocaleDateString('en', { month: 'long', year: 'numeric' })}
             </span>
             <div className="flex space-x-1">

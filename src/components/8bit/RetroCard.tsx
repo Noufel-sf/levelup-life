@@ -56,7 +56,7 @@ export const RetroCardHeader: React.FC<React.HTMLAttributes<HTMLDivElement>> = (
 
 export const RetroCardTitle: React.FC<React.HTMLAttributes<HTMLHeadingElement> & { pixelFont?: boolean }> = ({
   className,
-  pixelFont = false,
+  pixelFont = true,
   children,
   ...props
 }) => (

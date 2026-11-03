@@ -334,7 +334,7 @@ export const QuestsView: React.FC<QuestsViewProps> = ({ onRefreshProfile }) => {
                     <div className="flex-1">
                       <div className="flex items-center space-x-2.5 mb-1 flex-wrap">
                         <h3
-                          className={`font-mono font-bold text-base ${
+                          className={`font-arcade font-bold text-base tracking-wide ${
                             isCompleted ? 'line-through text-muted-foreground' : 'text-foreground'
                           }`}
                         >

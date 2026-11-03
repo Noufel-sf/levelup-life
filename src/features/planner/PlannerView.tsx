@@ -413,7 +413,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({ onRefreshProfile }) =>
                 </span>
               )}
             </div>
-            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground font-mono">
+            <h2 className="text-sm sm:text-base md:text-lg font-bold tracking-wider text-foreground font-pixel leading-snug">
               ORCHESTRATE YOUR{' '}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-neon-cyan to-neon-pink">
                 WEEKLY VICTORY
@@ -682,7 +682,7 @@ export const PlannerView: React.FC<PlannerViewProps> = ({ onRefreshProfile }) =>
                   </span>
                 </div>
 
-                <h3 className="text-xl sm:text-2xl font-bold font-mono text-foreground tracking-tight">
+                <h3 className="text-sm sm:text-base font-bold font-pixel text-foreground tracking-wide">
                   {selectedDateObj.toLocaleDateString('en', {
                     weekday: 'long',
                     day: 'numeric',

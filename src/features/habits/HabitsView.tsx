@@ -38,7 +38,7 @@ export const HabitsView: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-foreground">Habit Protocol System</h2>
+          <h2 className="text-sm sm:text-base font-bold text-foreground font-pixel tracking-wider">Habit Protocol System</h2>
           <p className="text-xs text-muted">Daily and weekly recurring habits that award consistent XP</p>
         </div>
         <RetroButton size="sm" variant="pink" onClick={() => setIsCreating(!isCreating)} pixelFont>

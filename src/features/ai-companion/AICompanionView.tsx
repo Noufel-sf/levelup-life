@@ -10,7 +10,7 @@ export const AICompanionView: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-foreground">AI Companion — Gemini Core</h2>
+          <h2 className="text-sm sm:text-base font-bold text-foreground font-pixel tracking-wider">AI Companion — Gemini Core</h2>
           <p className="text-xs text-muted">Goal decomposition, realistic day planning & adaptive rescheduling</p>
         </div>
         <RetroBadge variant="cyan" pixelFont>

@@ -220,7 +220,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ profile, onRefresh
                   [ 03 ] LEVEL {profile?.level || 1}
                 </span>
               </div>
-              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground font-mono">
+              <h2 className="text-sm sm:text-base md:text-lg font-bold tracking-wider text-foreground font-pixel leading-snug">
                 LEVEL UP YOUR{' '}
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-neon-cyan to-neon-pink">
                   REALITY

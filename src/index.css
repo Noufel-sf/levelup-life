@@ -35,6 +35,11 @@
     font-family: 'Pixelify Sans', 'Press Start 2P', 'Space Grotesk', 'Inter', monospace;
     letter-spacing: 0.02em;
   }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Press Start 2P', 'Pixelify Sans', monospace;
+    letter-spacing: 0.04em;
+  }
 }
 
 /* Custom retro cyberpunk scrollbar */

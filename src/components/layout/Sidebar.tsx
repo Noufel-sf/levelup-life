@@ -137,8 +137,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab, profi
             </div>
 
             <div className="overflow-hidden flex-1 min-w-0">
-              <p className="text-xs font-mono font-bold text-foreground truncate">{profile?.name || 'Player One'}</p>
-              <p className="text-[10px] font-mono truncate text-transparent bg-clip-text bg-gradient-to-r from-neon-pink via-neon-yellow to-neon-cyan font-bold">
+              <p className="text-[10px] font-pixel text-foreground truncate tracking-wide">{profile?.name || 'Player One'}</p>
+              <p className="text-[8px] font-pixel truncate text-transparent bg-clip-text bg-gradient-to-r from-neon-pink via-neon-yellow to-neon-cyan font-bold mt-0.5">
                 {profile?.title || 'Novice Adventurer'}
               </p>
             </div>
