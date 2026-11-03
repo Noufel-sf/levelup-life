@@ -22,6 +22,7 @@ import { RetroButton } from '@/components/8bit/RetroButton'
 import { RetroBadge } from '@/components/8bit/RetroBadge'
 import { RetroInput } from '@/components/8bit/RetroInput'
 import { RetroProgressBar } from '@/components/8bit/RetroProgressBar'
+import { soundEngine } from '@/lib/sound'
 import { GoalDTO, MilestoneDTO } from '@/types/ipc'
 
 interface QuestsViewProps {
@@ -140,8 +141,11 @@ export const QuestsView: React.FC<QuestsViewProps> = ({ onRefreshProfile }) => {
     if (!window.electronAPI) return
     const res = await window.electronAPI.toggleGoalComplete(id)
     if (res.xpAwarded > 0) {
+      soundEngine.playAchievement()
       showToast(`🏆 MAIN QUEST CONQUERED! +${res.xpAwarded} XP!`)
       onRefreshProfile?.()
+    } else {
+      soundEngine.playClick()
     }
     loadGoals()
   }
@@ -159,6 +163,7 @@ export const QuestsView: React.FC<QuestsViewProps> = ({ onRefreshProfile }) => {
 
     setNewMilestoneTitle('')
     setAddingMilestoneGoalId(null)
+    soundEngine.playClick()
     showToast('Milestone Added (+50 XP on completion)!')
     loadGoals()
   }
@@ -167,12 +172,19 @@ export const QuestsView: React.FC<QuestsViewProps> = ({ onRefreshProfile }) => {
     if (!window.electronAPI) return
     const res = await window.electronAPI.toggleMilestoneComplete(milestoneId)
     if (res.xpAwarded > 0) {
+      if (res.goalCompleted) {
+        soundEngine.playAchievement()
+      } else {
+        soundEngine.playTaskComplete()
+      }
       showToast(
         res.goalCompleted
           ? `🏆 ALL MILESTONES COMPLETE! +${res.xpAwarded} XP!`
           : `⚡ Milestone Cleared! +${res.xpAwarded} XP!`
       )
       onRefreshProfile?.()
+    } else {
+      soundEngine.playClick()
     }
     loadGoals()
   }

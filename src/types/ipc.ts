@@ -159,6 +159,10 @@ export interface ElectronAPI {
   // RPG Achievements & Trophies
   listAchievements: () => Promise<AchievementDTO[]>
   checkAchievements: () => Promise<AchievementDTO[]>
+
+  // Data Vault: Backup & Restore
+  exportData: () => Promise<{ canceled?: boolean; success?: boolean; filePath?: string; exportedAt?: string; stats?: any }>
+  importData: () => Promise<{ canceled?: boolean; success?: boolean; stats?: any }>
 }
 
 export interface AchievementDTO {

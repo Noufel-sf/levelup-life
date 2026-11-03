@@ -22,6 +22,7 @@ import { RetroCard, RetroCardHeader, RetroCardTitle } from '@/components/8bit/Re
 import { RetroButton } from '@/components/8bit/RetroButton'
 import { RetroBadge } from '@/components/8bit/RetroBadge'
 import { RetroInput } from '@/components/8bit/RetroInput'
+import { soundEngine } from '@/lib/sound'
 import { HabitDTO } from '@/types/ipc'
 
 interface HabitsViewProps {
@@ -211,7 +212,10 @@ export const HabitsView: React.FC<HabitsViewProps> = ({ onRefreshProfile }) => {
     try {
       const res = await window.electronAPI.toggleHabitComplete(habitId, todayStr)
       if (res?.xpAwarded && res.xpAwarded > 0) {
+        soundEngine.playHabitLog()
         triggerFeedback(`+${res.xpAwarded} XP AWARDED // PROTOCOL FULFILLED!`)
+      } else {
+        soundEngine.playClick()
       }
       await loadHabits()
       onRefreshProfile?.()

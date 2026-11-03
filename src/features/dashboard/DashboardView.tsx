@@ -19,6 +19,7 @@ import { RetroButton } from '@/components/8bit/RetroButton'
 import { RetroBadge } from '@/components/8bit/RetroBadge'
 import { RetroProgressBar } from '@/components/8bit/RetroProgressBar'
 import { RetroInput } from '@/components/8bit/RetroInput'
+import { soundEngine } from '@/lib/sound'
 import { UserProfileDTO, TaskDTO, HabitDTO } from '@/types/ipc'
 
 interface DashboardViewProps {
@@ -85,8 +86,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ profile, onRefresh
     if (!window.electronAPI) return
     const result = await window.electronAPI.toggleTaskComplete(taskId)
     if (result.xpAwarded > 0) {
+      soundEngine.playTaskComplete()
       showToast(`+${result.xpAwarded} XP Gained! Mission Complete!`)
       onRefreshProfile()
+    } else {
+      soundEngine.playClick()
     }
     loadData()
   }
@@ -95,8 +99,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ profile, onRefresh
     if (!window.electronAPI) return
     const result = await window.electronAPI.toggleHabitComplete(habitId, todayStr)
     if (result.xpAwarded > 0) {
+      soundEngine.playHabitLog()
       showToast(`+${result.xpAwarded} XP Gained! Habit Logged!`)
       onRefreshProfile()
+    } else {
+      soundEngine.playClick()
     }
     loadData()
   }

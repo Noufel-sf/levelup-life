@@ -1,12 +1,23 @@
-import React, { useState } from 'react'
-import { Minus, Square, X, Activity, Sparkles } from 'lucide-react'
+import React, { useState, useEffect } from 'react'
+import { Minus, Square, X, Activity, Sparkles, Volume2, VolumeX, Terminal } from 'lucide-react'
+import { soundEngine } from '@/lib/sound'
 
 interface WindowFrameProps {
   onTriggerQuote?: () => void
+  onOpenCommandPalette?: () => void
 }
 
-export const WindowFrame: React.FC<WindowFrameProps> = ({ onTriggerQuote }) => {
+export const WindowFrame: React.FC<WindowFrameProps> = ({ onTriggerQuote, onOpenCommandPalette }) => {
   const [isMaximized, setIsMaximized] = useState(false)
+  const [isMuted, setIsMuted] = useState(soundEngine.isMuted())
+
+  useEffect(() => {
+    return soundEngine.subscribe((muted) => setIsMuted(muted))
+  }, [])
+
+  const handleToggleSound = () => {
+    soundEngine.toggleMute()
+  }
 
   const handleMinimize = () => {
     window.electronAPI?.minimizeWindow?.()
@@ -59,6 +70,32 @@ export const WindowFrame: React.FC<WindowFrameProps> = ({ onTriggerQuote }) => {
       </div>
 
       <div className="flex items-center space-x-1 no-drag">
+        {/* Command Palette Trigger */}
+        {onOpenCommandPalette && (
+          <button
+            onClick={onOpenCommandPalette}
+            className="hidden sm:flex items-center gap-1.5 px-2 py-0.5 border border-primary/50 bg-primary/15 hover:bg-primary/25 text-primary text-[9px] font-mono tracking-widest shadow-[0_0_8px_rgba(168,85,247,0.25)] mr-1 cursor-pointer transition-all"
+            title="Open Command Palette (Ctrl+K)"
+          >
+            <Terminal className="w-3 h-3 text-primary" />
+            <span className="font-pixel">RUN [CTRL+K]</span>
+          </button>
+        )}
+
+        {/* Retro 8-bit Audio Toggle */}
+        <button
+          onClick={handleToggleSound}
+          className={`flex items-center gap-1 px-2 py-0.5 border text-[9px] font-mono mr-1 transition-all cursor-pointer ${
+            !isMuted
+              ? 'text-neon-cyan border-neon-cyan/50 bg-neon-cyan/15 hover:bg-neon-cyan/25 shadow-[0_0_8px_rgba(34,211,238,0.25)]'
+              : 'text-muted-foreground border-border bg-card hover:bg-secondary'
+          }`}
+          title={isMuted ? 'Sound FX: MUTED (Click to Enable 8-Bit Audio)' : 'Sound FX: ACTIVE (Click to Mute)'}
+        >
+          {!isMuted ? <Volume2 className="w-3 h-3 text-neon-cyan animate-pulse" /> : <VolumeX className="w-3 h-3 text-muted-foreground" />}
+          <span className="hidden lg:inline">{!isMuted ? 'CHIPTUNE: ON' : 'AUDIO: OFF'}</span>
+        </button>
+
         <button
           onClick={handleMinimize}
           className="w-7 h-7 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary border border-transparent hover:border-border transition-colors cursor-pointer"

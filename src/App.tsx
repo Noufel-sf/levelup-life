@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { WindowFrame } from './components/layout/WindowFrame'
 import { Sidebar, NavTab } from './components/layout/Sidebar'
 import { DashboardView } from './features/dashboard/DashboardView'
@@ -11,7 +11,9 @@ import { AICompanionView } from './features/ai-companion/AICompanionView'
 import { SettingsView } from './features/settings/SettingsView'
 import { QuoteNotificationToast } from './components/notifications/QuoteNotificationToast'
 import { AchievementToast } from './components/notifications/AchievementToast'
+import { CommandPalette } from './components/palette/CommandPalette'
 import { WorldQuote, getRandomQuote } from './lib/quotes'
+import { soundEngine } from './lib/sound'
 import { UserProfileDTO, AchievementDTO } from './types/ipc'
 
 export function App() {
@@ -19,6 +21,8 @@ export function App() {
   const [profile, setProfile] = useState<UserProfileDTO | null>(null)
   const [activeQuote, setActiveQuote] = useState<WorldQuote | null>(null)
   const [activeAchievement, setActiveAchievement] = useState<AchievementDTO | null>(null)
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false)
+  const prevLevelRef = useRef<number | null>(null)
 
   const checkAchievements = async () => {
     if (window.electronAPI?.checkAchievements) {
@@ -38,6 +42,12 @@ export function App() {
     if (window.electronAPI) {
       try {
         const p = await window.electronAPI.getProfile()
+        if (p) {
+          if (prevLevelRef.current !== null && p.level > prevLevelRef.current) {
+            soundEngine.playLevelUp()
+          }
+          prevLevelRef.current = p.level
+        }
         setProfile(p)
       } catch (err) {
         console.error('Failed to fetch profile:', err)
@@ -81,6 +91,27 @@ export function App() {
     }
   }, [triggerQuote])
 
+  // Global Keyboard Shortcuts (Ctrl+K for Omnibar, Ctrl+, for Settings)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl+K or Cmd+K: Command Palette
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        soundEngine.playClick()
+        setIsCommandPaletteOpen((prev) => !prev)
+      }
+      // Ctrl+, or Cmd+,: Open Settings
+      if ((e.ctrlKey || e.metaKey) && e.key === ',') {
+        e.preventDefault()
+        soundEngine.playClick()
+        setCurrentTab('settings')
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
+
   const renderContent = () => {
     switch (currentTab) {
       case 'dashboard':
@@ -109,8 +140,11 @@ export function App() {
       {/* DEV SCOPE Scanlines Overlay */}
       <div className="scanlines fixed inset-0 z-50 pointer-events-none opacity-20" />
 
-      {/* Custom Desktop Title Bar with Wisdom Quote Button */}
-      <WindowFrame onTriggerQuote={() => triggerQuote()} />
+      {/* Custom Desktop Title Bar with Wisdom Quote Button & Command Runner */}
+      <WindowFrame
+        onTriggerQuote={() => triggerQuote()}
+        onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+      />
 
       {/* Main App Layout */}
       <div className="flex flex-1 overflow-hidden relative">
@@ -126,6 +160,14 @@ export function App() {
           <div className="max-w-6xl mx-auto relative z-10">{renderContent()}</div>
         </main>
       </div>
+
+      {/* Global Command Palette Omnibar */}
+      <CommandPalette
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        onNavigate={(tab) => setCurrentTab(tab)}
+        onTriggerQuote={() => triggerQuote()}
+      />
 
       {/* Global In-App Quote Notification Toast */}
       <QuoteNotificationToast

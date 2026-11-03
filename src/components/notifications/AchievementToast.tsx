@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react'
 import { Award, Sparkles, X, Trophy } from 'lucide-react'
+import { soundEngine } from '@/lib/sound'
 import { AchievementDTO } from '@/types/ipc'
 
 interface AchievementToastProps {
@@ -10,6 +11,7 @@ interface AchievementToastProps {
 export const AchievementToast: React.FC<AchievementToastProps> = ({ achievement, onClose }) => {
   useEffect(() => {
     if (!achievement) return
+    soundEngine.playAchievement()
     const timer = setTimeout(() => {
       onClose()
     }, 7000)

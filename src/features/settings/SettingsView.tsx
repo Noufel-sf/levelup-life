@@ -13,12 +13,17 @@ import {
   Filter,
   Play,
   Volume2,
+  Database,
+  Download,
+  Upload,
+  HardDrive,
 } from 'lucide-react'
 import { RetroCard, RetroCardHeader, RetroCardTitle } from '@/components/8bit/RetroCard'
 import { RetroButton } from '@/components/8bit/RetroButton'
 import { RetroInput } from '@/components/8bit/RetroInput'
 import { RetroBadge } from '@/components/8bit/RetroBadge'
 import { WORLD_QUOTES, WorldQuote, getRandomQuote } from '@/lib/quotes'
+import { soundEngine } from '@/lib/sound'
 import { UserSettingsDTO } from '@/types/ipc'
 
 interface SettingsViewProps {
@@ -68,6 +73,63 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onTriggerQuote }) =>
   const [showCodex, setShowCodex] = useState<boolean>(false)
   const [codexSearch, setCodexSearch] = useState<string>('')
   const [codexLanguage, setCodexLanguage] = useState<string>('ALL')
+
+  // Sound FX State
+  const [soundMuted, setSoundMuted] = useState<boolean>(soundEngine.isMuted())
+  const [soundVolume, setSoundVolume] = useState<number>(Math.round(soundEngine.getVolume() * 100))
+
+  // Data Vault State
+  const [backupStatus, setBackupStatus] = useState<string | null>(null)
+  const [isExporting, setIsExporting] = useState<boolean>(false)
+  const [isImporting, setIsImporting] = useState<boolean>(false)
+
+  const handleExportBackup = async () => {
+    if (!window.electronAPI?.exportData) return
+    setIsExporting(true)
+    try {
+      const res = await window.electronAPI.exportData()
+      if (res.success) {
+        soundEngine.playAchievement()
+        setBackupStatus(`BACKUP EXPORTED: ${res.stats?.tasks || 0} missions, ${res.stats?.goals || 0} quests`)
+      } else if (!res.canceled) {
+        setBackupStatus('Export was canceled.')
+      }
+    } catch (err: any) {
+      setBackupStatus(`Export error: ${err?.message || 'Unknown'}`)
+    } finally {
+      setIsExporting(false)
+      setTimeout(() => setBackupStatus(null), 4000)
+    }
+  }
+
+  const handleImportBackup = async () => {
+    if (!window.electronAPI?.importData) return
+    const confirmed = window.confirm(
+      'WARNING: Importing a backup file will restore and overwrite existing tasks and quests with the same IDs. Proceed with database restore?'
+    )
+    if (!confirmed) return
+
+    setIsImporting(true)
+    try {
+      const res = await window.electronAPI.importData()
+      if (res.success) {
+        soundEngine.playLevelUp()
+        setBackupStatus(`DATA RESTORED: ${res.stats?.tasks || 0} missions, ${res.stats?.goals || 0} quests restored!`)
+      } else if (!res.canceled) {
+        setBackupStatus('Import canceled.')
+      }
+    } catch (err: any) {
+      setBackupStatus(`Import error: ${err?.message || 'Unknown'}`)
+    } finally {
+      setIsImporting(false)
+      setTimeout(() => setBackupStatus(null), 5000)
+    }
+  }
+
+  useEffect(() => {
+    const unsub = soundEngine.subscribe((muted) => setSoundMuted(muted))
+    return () => unsub()
+  }, [])
 
   useEffect(() => {
     // Load local storage preferences
@@ -357,6 +419,124 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onTriggerQuote }) =>
           </div>
         )}
 
+        {/* 8-Bit Retro Audio & Chiptune Synthesizer */}
+        <RetroCard variant="accent-cyan">
+          <RetroCardHeader>
+            <div className="flex items-center space-x-2">
+              <Volume2 className="w-4 h-4 text-neon-cyan" />
+              <RetroCardTitle pixelFont>8-BIT RETRO SOUND SYNTHESIZER</RetroCardTitle>
+            </div>
+            <RetroBadge variant={soundMuted ? 'muted' : 'cyan'} pixelFont>
+              {soundMuted ? 'AUDIO MUTED' : 'ARCADE SYNTH ACTIVE'}
+            </RetroBadge>
+          </RetroCardHeader>
+
+          <div className="space-y-4 font-mono text-xs">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Sound Enabled / Disabled Switch */}
+              <div className="p-3 bg-secondary/50 border border-border">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-bold text-foreground">Sound FX Engine</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newMuted = soundEngine.toggleMute()
+                      setSoundMuted(newMuted)
+                    }}
+                    className={`px-3 py-1 text-[10px] font-pixel border cursor-pointer transition-all ${
+                      !soundMuted
+                        ? 'bg-neon-cyan text-black border-neon-cyan shadow-[0_0_10px_rgba(34,211,238,0.5)]'
+                        : 'bg-card text-muted-foreground border-border hover:border-foreground'
+                    }`}
+                  >
+                    {!soundMuted ? 'ENABLED [ON]' : 'MUTED [OFF]'}
+                  </button>
+                </div>
+                <p className="text-[10px] text-muted-foreground">
+                  Authentic synthesized chiptune square & triangle waves. Zero external audio downloads.
+                </p>
+              </div>
+
+              {/* Master Volume Slider */}
+              <div className="p-3 bg-secondary/50 border border-border">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-bold text-foreground">Master Synth Volume</span>
+                  <span className="text-neon-cyan font-bold">{soundVolume}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={soundVolume}
+                  onChange={(e) => {
+                    const vol = Number(e.target.value)
+                    setSoundVolume(vol)
+                    soundEngine.setVolume(vol / 100)
+                  }}
+                  className="w-full accent-neon-cyan cursor-pointer"
+                />
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Adjust arcade effect volume level.
+                </p>
+              </div>
+            </div>
+
+            {/* Test Chiptune Sounds Bar */}
+            <div className="pt-3 border-t border-border">
+              <span className="text-[10px] text-muted-foreground block mb-2 font-bold uppercase">
+                Audition Chiptune Sounds:
+              </span>
+              <div className="flex flex-wrap items-center gap-2">
+                <RetroButton
+                  type="button"
+                  variant="cyan"
+                  size="sm"
+                  onClick={() => soundEngine.playTaskComplete()}
+                >
+                  <Play className="w-3 h-3 mr-1" />
+                  Task Complete (Coin)
+                </RetroButton>
+                <RetroButton
+                  type="button"
+                  variant="pink"
+                  size="sm"
+                  onClick={() => soundEngine.playHabitLog()}
+                >
+                  <Play className="w-3 h-3 mr-1" />
+                  Habit Log (Pulse)
+                </RetroButton>
+                <RetroButton
+                  type="button"
+                  variant="green"
+                  size="sm"
+                  onClick={() => soundEngine.playLevelUp()}
+                >
+                  <Play className="w-3 h-3 mr-1" />
+                  Level Up (Arpeggio)
+                </RetroButton>
+                <RetroButton
+                  type="button"
+                  variant="yellow"
+                  size="sm"
+                  onClick={() => soundEngine.playAchievement()}
+                >
+                  <Play className="w-3 h-3 mr-1" />
+                  Trophy Fanfare
+                </RetroButton>
+                <RetroButton
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => soundEngine.playClick()}
+                >
+                  <Play className="w-3 h-3 mr-1" />
+                  Click
+                </RetroButton>
+              </div>
+            </div>
+          </div>
+        </RetroCard>
+
         {/* Gemini AI Configuration */}
         <RetroCard variant="default">
           <RetroCardHeader>
@@ -380,6 +560,76 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onTriggerQuote }) =>
               <p className="text-[10px] text-muted/80 mt-1">
                 Securely encrypted and stored locally in SQLite. Used for AI Companion decomposition.
               </p>
+            </div>
+          </div>
+        </RetroCard>
+
+        {/* Data Vault: Backup & Restore */}
+        <RetroCard variant="accent-purple">
+          <RetroCardHeader>
+            <div className="flex items-center space-x-2">
+              <Database className="w-4 h-4 text-primary" />
+              <RetroCardTitle pixelFont>DATA VAULT // BACKUP & RESTORE</RetroCardTitle>
+            </div>
+            <RetroBadge variant="primary" pixelFont>
+              LOCAL SQLITE PERSISTENCE
+            </RetroBadge>
+          </RetroCardHeader>
+
+          <div className="space-y-4 font-mono text-xs">
+            {backupStatus && (
+              <div className="p-2.5 bg-primary/20 border border-primary text-neon-cyan font-mono text-xs flex items-center space-x-2 animate-bounce">
+                <Sparkles className="w-4 h-4 text-neon-yellow" />
+                <span>{backupStatus}</span>
+              </div>
+            )}
+
+            <p className="text-muted-foreground text-xs leading-relaxed">
+              All your progress, habits, quests, milestones, and achievements are stored locally in your SQLite database. You can export a snapshot backup anytime as JSON or restore from an existing backup file.
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+              <div className="p-3 bg-secondary/50 border border-border space-y-2">
+                <div className="flex items-center space-x-2 text-neon-cyan font-bold">
+                  <Download className="w-4 h-4" />
+                  <span>EXPORT SYSTEM BACKUP</span>
+                </div>
+                <p className="text-[10px] text-muted-foreground">
+                  Creates a timestamped JSON file containing all missions, quests, habits, and profile stats.
+                </p>
+                <RetroButton
+                  type="button"
+                  variant="cyan"
+                  size="sm"
+                  pixelFont
+                  disabled={isExporting}
+                  onClick={handleExportBackup}
+                >
+                  <Download className="w-3.5 h-3.5 mr-1" />
+                  {isExporting ? 'Exporting...' : 'Export Backup (JSON)'}
+                </RetroButton>
+              </div>
+
+              <div className="p-3 bg-secondary/50 border border-border space-y-2">
+                <div className="flex items-center space-x-2 text-neon-yellow font-bold">
+                  <Upload className="w-4 h-4" />
+                  <span>RESTORE FROM BACKUP</span>
+                </div>
+                <p className="text-[10px] text-muted-foreground">
+                  Restore quests, tasks, and habits from a previous LIFE OS backup file.
+                </p>
+                <RetroButton
+                  type="button"
+                  variant="yellow"
+                  size="sm"
+                  pixelFont
+                  disabled={isImporting}
+                  onClick={handleImportBackup}
+                >
+                  <Upload className="w-3.5 h-3.5 mr-1" />
+                  {isImporting ? 'Restoring...' : 'Import & Restore'}
+                </RetroButton>
+              </div>
             </div>
           </div>
         </RetroCard>

@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { RetroProgressBar } from '../8bit/RetroProgressBar'
 import { RetroBadge } from '../8bit/RetroBadge'
+import { soundEngine } from '@/lib/sound'
 import { UserProfileDTO } from '@/types/ipc'
 
 export type NavTab = 'dashboard' | 'calendar' | 'planner' | 'quests' | 'habits' | 'progress' | 'ai' | 'settings'
@@ -164,7 +165,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab, profi
             return (
               <button
                 key={item.id}
-                onClick={() => onSelectTab(item.id)}
+                onClick={() => {
+                  soundEngine.playClick()
+                  onSelectTab(item.id)
+                }}
                 className={`w-full flex items-center justify-between px-3 py-2 text-xs font-mono transition-all duration-150 cursor-pointer ${
                   isActive
                     ? item.activeBg + ' font-bold'
@@ -193,7 +197,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab, profi
       {/* Bottom System Settings */}
       <div className="p-3 border-t border-border bg-[#09090b]">
         <button
-          onClick={() => onSelectTab('settings')}
+          onClick={() => {
+            soundEngine.playClick()
+            onSelectTab('settings')
+          }}
           className={`w-full flex items-center justify-between px-3 py-2 text-xs font-mono transition-all duration-150 cursor-pointer ${
             currentTab === 'settings'
               ? 'bg-neon-yellow/15 text-neon-yellow border-l-2 border-neon-yellow font-bold shadow-[inset_0_0_10px_rgba(250,204,21,0.2)]'

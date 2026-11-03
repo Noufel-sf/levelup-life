@@ -27,6 +27,7 @@ import { RetroButton } from '@/components/8bit/RetroButton'
 import { RetroBadge } from '@/components/8bit/RetroBadge'
 import { RetroInput } from '@/components/8bit/RetroInput'
 import { RetroProgressBar } from '@/components/8bit/RetroProgressBar'
+import { soundEngine } from '@/lib/sound'
 import { TaskDTO, GoalDTO } from '@/types/ipc'
 
 interface PlannerViewProps {
@@ -190,8 +191,11 @@ export const PlannerView: React.FC<PlannerViewProps> = ({ onRefreshProfile }) =>
 
     const result = await window.electronAPI.toggleTaskComplete(taskId)
     if (result.xpAwarded > 0) {
+      soundEngine.playTaskComplete()
       showToast(`+${result.xpAwarded} XP Gained! Mission Complete!`)
       if (onRefreshProfile) onRefreshProfile()
+    } else {
+      soundEngine.playClick()
     }
     loadData()
   }

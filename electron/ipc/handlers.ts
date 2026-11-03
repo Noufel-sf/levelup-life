@@ -1,5 +1,6 @@
-import { ipcMain, BrowserWindow, Notification } from 'electron'
+import { ipcMain, BrowserWindow, Notification, dialog } from 'electron'
 import path from 'node:path'
+import fs from 'node:fs/promises'
 import { prisma } from '../db/prisma'
 import { XPService } from '../services/XPService'
 import { WORLD_QUOTES, getRandomQuote, WorldQuote } from '../services/quotes'
@@ -451,5 +452,219 @@ export function registerIpcHandlers(mainWindow: BrowserWindow) {
 
   ipcMain.handle('achievements:check', async () => {
     return await AchievementService.checkAndUnlockAchievements()
+  })
+
+  // Data Vault: Backup & Restore
+  ipcMain.handle('data:export', async () => {
+    const defaultName = `life-os-backup-${new Date().toISOString().split('T')[0]}.json`
+    const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {
+      title: 'Export LIFE OS Backup',
+      defaultPath: defaultName,
+      filters: [{ name: 'JSON Backup (*.json)', extensions: ['json'] }],
+    })
+
+    if (canceled || !filePath) {
+      return { canceled: true }
+    }
+
+    const backupPayload = {
+      version: '1.0.0',
+      exportedAt: new Date().toISOString(),
+      profile: await prisma.userProfile.findFirst({ include: { skills: true } }),
+      goals: await prisma.goal.findMany({ include: { milestones: true } }),
+      tasks: await prisma.task.findMany(),
+      habits: await prisma.habit.findMany({ include: { logs: true } }),
+      settings: await prisma.userSettings.findFirst(),
+      userAchievements: await prisma.userAchievement.findMany(),
+    }
+
+    await fs.writeFile(filePath, JSON.stringify(backupPayload, null, 2), 'utf-8')
+    return {
+      success: true,
+      filePath,
+      exportedAt: backupPayload.exportedAt,
+      stats: {
+        tasks: backupPayload.tasks.length,
+        goals: backupPayload.goals.length,
+        habits: backupPayload.habits.length,
+      },
+    }
+  })
+
+  ipcMain.handle('data:import', async () => {
+    const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
+      title: 'Select LIFE OS Backup JSON',
+      properties: ['openFile'],
+      filters: [{ name: 'JSON Backup (*.json)', extensions: ['json'] }],
+    })
+
+    if (canceled || !filePaths || filePaths.length === 0) {
+      return { canceled: true }
+    }
+
+    const filePath = filePaths[0]
+    const content = await fs.readFile(filePath, 'utf-8')
+    const parsed = JSON.parse(content)
+
+    if (!parsed || !parsed.version) {
+      throw new Error('Invalid backup file: missing LIFE OS format metadata.')
+    }
+
+    // Restore goals & milestones
+    if (Array.isArray(parsed.goals)) {
+      for (const g of parsed.goals) {
+        await prisma.goal.upsert({
+          where: { id: g.id },
+          create: {
+            id: g.id,
+            title: g.title,
+            description: g.description,
+            category: g.category || 'General',
+            priority: g.priority || 'MEDIUM',
+            status: g.status || 'ACTIVE',
+            targetDate: g.targetDate ? new Date(g.targetDate) : null,
+            icon: g.icon,
+            color: g.color,
+          },
+          update: {
+            title: g.title,
+            description: g.description,
+            category: g.category || 'General',
+            priority: g.priority || 'MEDIUM',
+            status: g.status || 'ACTIVE',
+            targetDate: g.targetDate ? new Date(g.targetDate) : null,
+          },
+        })
+
+        if (Array.isArray(g.milestones)) {
+          for (const m of g.milestones) {
+            await prisma.milestone.upsert({
+              where: { id: m.id },
+              create: {
+                id: m.id,
+                goalId: g.id,
+                title: m.title,
+                description: m.description,
+                order: m.order || 0,
+                status: m.status || 'PENDING',
+                xpReward: m.xpReward || 50,
+                completedAt: m.completedAt ? new Date(m.completedAt) : null,
+              },
+              update: {
+                title: m.title,
+                status: m.status || 'PENDING',
+                xpReward: m.xpReward || 50,
+              },
+            })
+          }
+        }
+      }
+    }
+
+    // Restore tasks
+    if (Array.isArray(parsed.tasks)) {
+      for (const t of parsed.tasks) {
+        await prisma.task.upsert({
+          where: { id: t.id },
+          create: {
+            id: t.id,
+            title: t.title,
+            description: t.description,
+            goalId: t.goalId || null,
+            milestoneId: t.milestoneId || null,
+            skillId: t.skillId || null,
+            type: t.type || 'DAILY_MISSION',
+            priority: t.priority || 'MEDIUM',
+            difficulty: t.difficulty || 'MEDIUM',
+            estimatedMin: t.estimatedMin || 30,
+            scheduledDate: t.scheduledDate || null,
+            startTime: t.startTime || null,
+            endTime: t.endTime || null,
+            color: t.color || null,
+            xpReward: t.xpReward || 20,
+            status: t.status || 'TODO',
+            completedAt: t.completedAt ? new Date(t.completedAt) : null,
+          },
+          update: {
+            title: t.title,
+            description: t.description,
+            status: t.status || 'TODO',
+            scheduledDate: t.scheduledDate || null,
+          },
+        })
+      }
+    }
+
+    // Restore habits & logs
+    if (Array.isArray(parsed.habits)) {
+      for (const h of parsed.habits) {
+        await prisma.habit.upsert({
+          where: { id: h.id },
+          create: {
+            id: h.id,
+            name: h.name,
+            description: h.description,
+            icon: h.icon || 'zap',
+            category: h.category || 'General',
+            frequency: h.frequency || 'DAILY',
+            daysOfWeek: h.daysOfWeek || '1,2,3,4,5,6,7',
+            targetDuration: h.targetDuration || 15,
+            xpReward: h.xpReward || 10,
+          },
+          update: {
+            name: h.name,
+            description: h.description,
+            category: h.category || 'General',
+          },
+        })
+
+        if (Array.isArray(h.logs)) {
+          for (const l of h.logs) {
+            await prisma.habitLog.upsert({
+              where: {
+                habitId_date: {
+                  habitId: h.id,
+                  date: l.date,
+                },
+              },
+              create: {
+                habitId: h.id,
+                date: l.date,
+                completed: l.completed ?? true,
+                durationMin: l.durationMin || null,
+              },
+              update: {
+                completed: l.completed ?? true,
+              },
+            })
+          }
+        }
+      }
+    }
+
+    // Restore profile XP and level
+    if (parsed.profile) {
+      const currentProfile = await prisma.userProfile.findFirst()
+      if (currentProfile) {
+        await prisma.userProfile.update({
+          where: { id: currentProfile.id },
+          data: {
+            level: parsed.profile.level || currentProfile.level,
+            currentXp: parsed.profile.currentXp || currentProfile.currentXp,
+            totalXp: parsed.profile.totalXp || currentProfile.totalXp,
+            title: parsed.profile.title || currentProfile.title,
+          },
+        })
+      }
+    }
+
+    return {
+      success: true,
+      stats: {
+        tasks: parsed.tasks?.length || 0,
+        goals: parsed.goals?.length || 0,
+        habits: parsed.habits?.length || 0,
+      },
+    }
   })
 }

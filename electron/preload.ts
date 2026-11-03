@@ -56,4 +56,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // RPG Achievements & Trophies
   listAchievements: () => ipcRenderer.invoke('achievements:list'),
   checkAchievements: () => ipcRenderer.invoke('achievements:check'),
+
+  // Data Vault: Backup & Restore
+  exportData: () => ipcRenderer.invoke('data:export'),
+  importData: () => ipcRenderer.invoke('data:import'),
 })
