@@ -10,6 +10,7 @@ import { AchievementService } from '../services/achievementService'
 export function registerIpcHandlers(mainWindow: BrowserWindow) {
   // Window controls & Always-On-Top Mini Widget HUD
   let previousBounds: Electron.Rectangle | null = null
+  let wasMaximized = false
   let isMiniWidgetMode = false
 
   ipcMain.handle('window:minimize', () => mainWindow.minimize())
@@ -24,17 +25,23 @@ export function registerIpcHandlers(mainWindow: BrowserWindow) {
 
   ipcMain.handle('window:setMiniMode', async (_, enable: boolean) => {
     if (enable && !isMiniWidgetMode) {
-      previousBounds = mainWindow.getBounds()
+      wasMaximized = mainWindow.isMaximized()
+      previousBounds = wasMaximized ? { x: 100, y: 100, width: 1280, height: 840 } : mainWindow.getBounds()
+      
+      if (wasMaximized) {
+        mainWindow.unmaximize()
+      }
+
       isMiniWidgetMode = true
       mainWindow.setAlwaysOnTop(true, 'screen-saver')
-      mainWindow.setMinimumSize(320, 95)
+      mainWindow.setMinimumSize(280, 75)
+      mainWindow.setResizable(true)
 
-      const currentBounds = previousBounds
-      const activeDisplay = screen.getDisplayMatching(currentBounds)
+      const activeDisplay = screen.getDisplayMatching(previousBounds)
       const workArea = activeDisplay.workArea
-      const widgetWidth = 340
-      const widgetHeight = 100
-      const x = Math.round(workArea.x + workArea.width - widgetWidth - 25)
+      const widgetWidth = 320
+      const widgetHeight = 84
+      const x = Math.round(workArea.x + workArea.width - widgetWidth - 30)
       const y = Math.round(workArea.y + 35)
 
       mainWindow.setBounds({ x, y, width: widgetWidth, height: widgetHeight })
@@ -43,7 +50,11 @@ export function registerIpcHandlers(mainWindow: BrowserWindow) {
       isMiniWidgetMode = false
       mainWindow.setAlwaysOnTop(false)
       mainWindow.setMinimumSize(1024, 680)
-      if (previousBounds) {
+
+      if (wasMaximized) {
+        mainWindow.maximize()
+        wasMaximized = false
+      } else if (previousBounds) {
         mainWindow.setBounds(previousBounds)
       } else {
         mainWindow.setSize(1280, 840)

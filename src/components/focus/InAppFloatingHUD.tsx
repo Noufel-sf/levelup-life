@@ -98,3 +98,4 @@ export const InAppFloatingHUD: React.FC<InAppFloatingHUDProps> = ({
     </div>
   )
 }
+
