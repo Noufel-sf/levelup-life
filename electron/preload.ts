@@ -37,6 +37,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Habits
   getHabits: () => ipcRenderer.invoke('habits:list'),
   createHabit: (data: any) => ipcRenderer.invoke('habits:create', data),
+  updateHabit: (id: string, data: any) => ipcRenderer.invoke('habits:update', { id, data }),
   toggleHabitComplete: (habitId: string, date: string) =>
     ipcRenderer.invoke('habits:toggleDate', { habitId, date }),
   deleteHabit: (id: string) => ipcRenderer.invoke('habits:delete', id),

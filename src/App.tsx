@@ -41,7 +41,7 @@ export function App() {
       case 'quests':
         return <QuestsView onRefreshProfile={refreshProfile} />
       case 'habits':
-        return <HabitsView />
+        return <HabitsView onRefreshProfile={refreshProfile} />
       case 'progress':
         return <ProgressView profile={profile} />
       case 'ai':

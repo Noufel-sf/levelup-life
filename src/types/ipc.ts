@@ -141,6 +141,7 @@ export interface ElectronAPI {
   // Habits
   getHabits: () => Promise<HabitDTO[]>
   createHabit: (data: Partial<HabitDTO>) => Promise<HabitDTO>
+  updateHabit: (id: string, data: Partial<HabitDTO>) => Promise<HabitDTO>
   toggleHabitComplete: (habitId: string, date: string) => Promise<{ habit: HabitDTO; profile: UserProfileDTO; xpAwarded: number }>
   deleteHabit: (id: string) => Promise<boolean>
 }

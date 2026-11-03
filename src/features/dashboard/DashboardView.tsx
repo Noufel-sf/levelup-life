@@ -547,6 +547,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ profile, onRefresh
                 </div>
                 <h3 className="font-pixel text-xs text-neon-pink tracking-wider">HABIT PROTOCOLS</h3>
               </div>
+              <span className="font-mono text-[9px] text-neon-pink font-bold">
+                {habits.filter((h) => h.logs.some((l) => l.date === todayStr && l.completed)).length}/{habits.length} DONE
+              </span>
             </div>
 
             <div className="space-y-2">

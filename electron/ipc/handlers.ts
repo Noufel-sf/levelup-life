@@ -358,11 +358,41 @@ export function registerIpcHandlers(mainWindow: BrowserWindow) {
     return { habit: updatedHabit!, profile: updatedProfile!, xpAwarded }
   })
 
-  ipcMain.handle('habits:delete', async (_, id: string) => {
-    await prisma.habit.update({
+  ipcMain.handle('habits:update', async (_, { id, data }) => {
+    return await prisma.habit.update({
       where: { id },
-      data: { archived: true },
+      data: {
+        ...(data.name !== undefined ? { name: data.name } : {}),
+        ...(data.description !== undefined ? { description: data.description } : {}),
+        ...(data.icon !== undefined ? { icon: data.icon } : {}),
+        ...(data.category !== undefined ? { category: data.category } : {}),
+        ...(data.frequency !== undefined ? { frequency: data.frequency } : {}),
+        ...(data.daysOfWeek !== undefined ? { daysOfWeek: data.daysOfWeek } : {}),
+        ...(data.targetDuration !== undefined ? { targetDuration: data.targetDuration } : {}),
+        ...(data.reminderTime !== undefined ? { reminderTime: data.reminderTime } : {}),
+        ...(data.xpReward !== undefined ? { xpReward: data.xpReward } : {}),
+        ...(data.archived !== undefined ? { archived: data.archived } : {}),
+      },
+      include: {
+        logs: {
+          orderBy: { date: 'desc' },
+          take: 30,
+        },
+      },
     })
+  })
+
+  ipcMain.handle('habits:delete', async (_, id: string) => {
+    try {
+      await prisma.habit.delete({
+        where: { id },
+      })
+    } catch {
+      await prisma.habit.update({
+        where: { id },
+        data: { archived: true },
+      })
+    }
     return true
   })
 }
