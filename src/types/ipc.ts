@@ -109,6 +109,8 @@ export interface ElectronAPI {
   minimizeWindow: () => Promise<void>
   maximizeWindow: () => Promise<void>
   closeWindow: () => Promise<void>
+  setMiniWidgetMode: (enable: boolean) => Promise<{ isMini: boolean }>
+  isMiniWidgetMode: () => Promise<boolean>
 
   // Profile & XP
   getProfile: () => Promise<UserProfileDTO>

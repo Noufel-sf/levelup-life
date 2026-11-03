@@ -5,6 +5,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   minimizeWindow: () => ipcRenderer.invoke('window:minimize'),
   maximizeWindow: () => ipcRenderer.invoke('window:maximize'),
   closeWindow: () => ipcRenderer.invoke('window:close'),
+  setMiniWidgetMode: (enable: boolean) => ipcRenderer.invoke('window:setMiniMode', enable),
+  isMiniWidgetMode: () => ipcRenderer.invoke('window:isMiniMode'),
 
   // Profile & XP
   getProfile: () => ipcRenderer.invoke('profile:get'),

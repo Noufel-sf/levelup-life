@@ -1,4 +1,4 @@
-import { ipcMain, BrowserWindow, Notification, dialog } from 'electron'
+import { ipcMain, BrowserWindow, Notification, dialog, screen } from 'electron'
 import path from 'node:path'
 import fs from 'node:fs/promises'
 import { prisma } from '../db/prisma'
@@ -8,7 +8,10 @@ import { AIService } from '../services/aiService'
 import { AchievementService } from '../services/achievementService'
 
 export function registerIpcHandlers(mainWindow: BrowserWindow) {
-  // Window controls
+  // Window controls & Always-On-Top Mini Widget HUD
+  let previousBounds: Electron.Rectangle | null = null
+  let isMiniWidgetMode = false
+
   ipcMain.handle('window:minimize', () => mainWindow.minimize())
   ipcMain.handle('window:maximize', () => {
     if (mainWindow.isMaximized()) {
@@ -18,6 +21,40 @@ export function registerIpcHandlers(mainWindow: BrowserWindow) {
     }
   })
   ipcMain.handle('window:close', () => mainWindow.close())
+
+  ipcMain.handle('window:setMiniMode', async (_, enable: boolean) => {
+    if (enable && !isMiniWidgetMode) {
+      previousBounds = mainWindow.getBounds()
+      isMiniWidgetMode = true
+      mainWindow.setAlwaysOnTop(true, 'screen-saver')
+      mainWindow.setMinimumSize(320, 95)
+
+      const currentBounds = previousBounds
+      const activeDisplay = screen.getDisplayMatching(currentBounds)
+      const workArea = activeDisplay.workArea
+      const widgetWidth = 340
+      const widgetHeight = 100
+      const x = Math.round(workArea.x + workArea.width - widgetWidth - 25)
+      const y = Math.round(workArea.y + 35)
+
+      mainWindow.setBounds({ x, y, width: widgetWidth, height: widgetHeight })
+      return { isMini: true }
+    } else if (!enable && isMiniWidgetMode) {
+      isMiniWidgetMode = false
+      mainWindow.setAlwaysOnTop(false)
+      mainWindow.setMinimumSize(1024, 680)
+      if (previousBounds) {
+        mainWindow.setBounds(previousBounds)
+      } else {
+        mainWindow.setSize(1280, 840)
+        mainWindow.center()
+      }
+      return { isMini: false }
+    }
+    return { isMini: isMiniWidgetMode }
+  })
+
+  ipcMain.handle('window:isMiniMode', () => isMiniWidgetMode)
 
   // Profile & Settings
   ipcMain.handle('profile:get', async () => {

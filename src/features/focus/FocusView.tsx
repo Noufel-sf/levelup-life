@@ -1,172 +1,52 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react'
+import React from 'react'
 import {
   Flame,
   Play,
   Pause,
   RotateCcw,
   CheckCircle2,
-  Clock,
-  Sparkles,
-  Zap,
   Target,
-  Award,
-  ChevronRight,
-  Volume2,
-  VolumeX,
   Crosshair,
   Coffee,
+  ExternalLink,
 } from 'lucide-react'
 import { RetroCard, RetroCardHeader, RetroCardTitle } from '@/components/8bit/RetroCard'
 import { RetroButton } from '@/components/8bit/RetroButton'
 import { RetroBadge } from '@/components/8bit/RetroBadge'
 import { RetroProgressBar } from '@/components/8bit/RetroProgressBar'
+import { useFocus, TimerMode, MODE_CONFIGS } from '@/context/FocusContext'
 import { soundEngine } from '@/lib/sound'
-import { TaskDTO, UserProfileDTO } from '@/types/ipc'
+import { UserProfileDTO } from '@/types/ipc'
 
 interface FocusViewProps {
   profile: UserProfileDTO | null
   onRefreshProfile?: () => void
 }
 
-type TimerMode = 'FOCUS_25' | 'FOCUS_45' | 'FOCUS_60' | 'BREAK_5' | 'BREAK_15'
-
-const MODE_CONFIGS: Record<TimerMode, { label: string; durationMin: number; isBreak: boolean; color: string }> = {
-  FOCUS_25: { label: '25m Sprint', durationMin: 25, isBreak: false, color: 'text-neon-pink border-neon-pink' },
-  FOCUS_45: { label: '45m Deep Dive', durationMin: 45, isBreak: false, color: 'text-neon-cyan border-neon-cyan' },
-  FOCUS_60: { label: '60m Power Hour', durationMin: 60, isBreak: false, color: 'text-primary border-primary' },
-  BREAK_5: { label: '5m Recharge', durationMin: 5, isBreak: true, color: 'text-neon-green border-neon-green' },
-  BREAK_15: { label: '15m Neural Rest', durationMin: 15, isBreak: true, color: 'text-neon-yellow border-neon-yellow' },
-}
-
-export const FocusView: React.FC<FocusViewProps> = ({ profile, onRefreshProfile }) => {
-  const [mode, setMode] = useState<TimerMode>('FOCUS_25')
-  const [secondsRemaining, setSecondsRemaining] = useState(25 * 60)
-  const [isRunning, setIsRunning] = useState(false)
-  const [tasks, setTasks] = useState<TaskDTO[]>([])
-  const [selectedTaskId, setSelectedTaskId] = useState<string>('')
-  const [customGoal, setCustomGoal] = useState<string>('')
-  const [stats, setStats] = useState<{ todayCount: number; todayXp: number; totalSessions: number; totalFocusXp: number }>({
-    todayCount: 0,
-    todayXp: 0,
-    totalSessions: 0,
-    totalFocusXp: 0,
-  })
-
-  // Celebration state
-  const [completedSession, setCompletedSession] = useState<{ xp: number; label: string } | null>(null)
-
-  const timerRef = useRef<NodeJS.Timeout | null>(null)
-  const currentTotalSeconds = useMemo(() => MODE_CONFIGS[mode].durationMin * 60, [mode])
-
-  // Load active tasks & focus telemetry
-  useEffect(() => {
-    loadData()
-  }, [])
-
-  const loadData = async () => {
-    if (!window.electronAPI) return
-    try {
-      const [allTasks, fStats] = await Promise.all([
-        window.electronAPI.getTasks(),
-        window.electronAPI.getFocusStats?.() || Promise.resolve({ todayCount: 0, todayXp: 0, totalSessions: 0, totalFocusXp: 0 }),
-      ])
-      // Filter incomplete tasks
-      setTasks((allTasks || []).filter((t) => t.status !== 'COMPLETED'))
-      setStats(fStats)
-    } catch (err) {
-      console.error('Failed to load focus data:', err)
-    }
-  }
-
-  // Switch timer mode
-  const handleSelectMode = (newMode: TimerMode) => {
-    soundEngine.playClick()
-    setIsRunning(false)
-    if (timerRef.current) clearInterval(timerRef.current)
-    setMode(newMode)
-    setSecondsRemaining(MODE_CONFIGS[newMode].durationMin * 60)
-  }
-
-  // Timer Tick Engine
-  useEffect(() => {
-    if (isRunning) {
-      timerRef.current = setInterval(() => {
-        setSecondsRemaining((prev) => {
-          if (prev <= 1) {
-            handleTimerComplete()
-            return 0
-          }
-          return prev - 1
-        })
-      }, 1000)
-    } else {
-      if (timerRef.current) clearInterval(timerRef.current)
-    }
-
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current)
-    }
-  }, [isRunning, mode])
-
-  const handleToggleTimer = () => {
-    soundEngine.playClick()
-    setIsRunning((prev) => !prev)
-  }
-
-  const handleResetTimer = () => {
-    soundEngine.playClick()
-    setIsRunning(false)
-    setSecondsRemaining(MODE_CONFIGS[mode].durationMin * 60)
-  }
-
-  // Session Completion logic
-  const handleTimerComplete = async () => {
-    setIsRunning(false)
-    const isBreak = MODE_CONFIGS[mode].isBreak
-
-    if (isBreak) {
-      soundEngine.playTaskComplete()
-      alert('Cyber Recharge complete! Ready for your next deep work sprint!')
-      handleSelectMode('FOCUS_25')
-      return
-    }
-
-    // It's a focus sprint! Award XP and log
-    soundEngine.playLevelUp()
-    const durationMin = MODE_CONFIGS[mode].durationMin
-    const chosenTask = tasks.find((t) => t.id === selectedTaskId)
-    const label = chosenTask ? chosenTask.title : customGoal.trim() || `${durationMin}m Deep Work Sprint`
-
-    if (window.electronAPI?.completeFocusSession) {
-      try {
-        const res = await window.electronAPI.completeFocusSession({
-          durationMin,
-          taskId: selectedTaskId || null,
-          customTitle: label,
-        })
-
-        setCompletedSession({ xp: res.xpAwarded, label })
-        onRefreshProfile?.()
-        loadData()
-      } catch (err) {
-        console.error('Failed to complete focus session:', err)
-      }
-    }
-  }
-
-  // Format time MM:SS
-  const minutes = Math.floor(secondsRemaining / 60)
-  const seconds = secondsRemaining % 60
-  const timeFormatted = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
-
-  // Progress percentage
-  const elapsed = currentTotalSeconds - secondsRemaining
-  const progressPercent = Math.min(100, Math.round((elapsed / currentTotalSeconds) * 100))
+export const FocusView: React.FC<FocusViewProps> = ({ profile }) => {
+  const {
+    mode,
+    timeFormatted,
+    isRunning,
+    progressPercent,
+    tasks,
+    selectedTaskId,
+    selectedTask,
+    customGoal,
+    stats,
+    completedSession,
+    setMode,
+    setSelectedTaskId,
+    setCustomGoal,
+    toggleTimer,
+    resetTimer,
+    conquerSprint,
+    enterMiniMode,
+    dismissCompletedSession,
+  } = useFocus()
 
   // Find Focus Skill from user profile
   const focusSkill = profile?.skills?.find((s) => s.name.toLowerCase() === 'focus')
-
-  const selectedTaskObj = tasks.find((t) => t.id === selectedTaskId)
 
   return (
     <div className="space-y-6 pb-20 select-none relative">
@@ -206,7 +86,7 @@ export const FocusView: React.FC<FocusViewProps> = ({ profile, onRefreshProfile 
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Daily Deep Work:</span>
-                <span className="text-neon-cyan font-bold">{stats.todayCount + 1} Sprints Today</span>
+                <span className="text-neon-cyan font-bold">{stats.todayCount} Sprints Completed</span>
               </div>
             </div>
 
@@ -216,8 +96,8 @@ export const FocusView: React.FC<FocusViewProps> = ({ profile, onRefreshProfile 
               pixelFont
               className="w-full"
               onClick={() => {
-                setCompletedSession(null)
-                handleSelectMode('BREAK_5')
+                dismissCompletedSession()
+                setMode('BREAK_5')
               }}
             >
               TAKE 5M RECHARGE BREAK (+RECOVERY)
@@ -247,17 +127,29 @@ export const FocusView: React.FC<FocusViewProps> = ({ profile, onRefreshProfile 
             </p>
           </div>
 
-          {/* Quick HUD Metrics */}
-          <div className="flex items-center gap-2">
-            <div className="bg-secondary/70 p-2.5 border border-border text-center min-w-[90px]">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Float Above Screens Widget Button */}
+            <RetroButton
+              variant="cyan"
+              size="sm"
+              pixelFont
+              onClick={enterMiniMode}
+              title="Shrink into an Always-On-Top Mini Widget floating above all your other applications"
+            >
+              <ExternalLink className="w-3.5 h-3.5 mr-1" />
+              FLOAT ABOVE SCREENS
+            </RetroButton>
+
+            {/* Quick HUD Metrics */}
+            <div className="bg-secondary/70 p-2.5 border border-border text-center min-w-[80px]">
               <span className="text-[9px] font-mono text-muted-foreground block uppercase font-bold">Today Sprints</span>
               <span className="text-sm font-pixel text-neon-cyan font-bold">{stats.todayCount}</span>
             </div>
-            <div className="bg-secondary/70 p-2.5 border border-border text-center min-w-[90px]">
+            <div className="bg-secondary/70 p-2.5 border border-border text-center min-w-[80px]">
               <span className="text-[9px] font-mono text-muted-foreground block uppercase font-bold">Focus XP</span>
               <span className="text-sm font-pixel text-neon-yellow font-bold">+{stats.todayXp} XP</span>
             </div>
-            <div className="bg-secondary/70 p-2.5 border border-border text-center min-w-[90px]">
+            <div className="bg-secondary/70 p-2.5 border border-border text-center min-w-[80px]">
               <span className="text-[9px] font-mono text-muted-foreground block uppercase font-bold">Focus Attribute</span>
               <span className="text-sm font-pixel text-neon-pink font-bold">Lv.{focusSkill?.level || 1}</span>
             </div>
@@ -276,7 +168,7 @@ export const FocusView: React.FC<FocusViewProps> = ({ profile, onRefreshProfile 
               return (
                 <button
                   key={mKey}
-                  onClick={() => handleSelectMode(mKey)}
+                  onClick={() => setMode(mKey)}
                   className={`px-3 py-1.5 text-xs font-mono font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
                     isSelected
                       ? `bg-secondary ${cfg.color} shadow-[0_0_12px_rgba(236,72,153,0.3)]`
@@ -300,7 +192,7 @@ export const FocusView: React.FC<FocusViewProps> = ({ profile, onRefreshProfile 
               <Target className="w-3.5 h-3.5 text-neon-pink" />
               <span>ACTIVE OBJECTIVE:</span>
               <span className="text-foreground font-bold">
-                {selectedTaskObj ? selectedTaskObj.title : customGoal || 'Freeform Deep Work Sprint'}
+                {selectedTask ? selectedTask.title : customGoal || 'Freeform Deep Work Sprint'}
               </span>
             </div>
 
@@ -355,7 +247,7 @@ export const FocusView: React.FC<FocusViewProps> = ({ profile, onRefreshProfile 
                 variant={isRunning ? 'secondary' : 'pink'}
                 size="lg"
                 pixelFont
-                onClick={handleToggleTimer}
+                onClick={toggleTimer}
                 className="min-w-[140px]"
               >
                 {isRunning ? (
@@ -371,7 +263,7 @@ export const FocusView: React.FC<FocusViewProps> = ({ profile, onRefreshProfile 
                 )}
               </RetroButton>
 
-              <RetroButton variant="ghost" size="lg" onClick={handleResetTimer}>
+              <RetroButton variant="ghost" size="lg" onClick={resetTimer}>
                 <RotateCcw className="w-4 h-4 mr-1.5" />
                 Reset
               </RetroButton>
@@ -380,7 +272,7 @@ export const FocusView: React.FC<FocusViewProps> = ({ profile, onRefreshProfile 
                 variant="cyan"
                 size="lg"
                 pixelFont
-                onClick={handleTimerComplete}
+                onClick={conquerSprint}
                 title="Conquer sprint early and award XP"
               >
                 <CheckCircle2 className="w-4 h-4 mr-1.5" />
@@ -438,12 +330,12 @@ export const FocusView: React.FC<FocusViewProps> = ({ profile, onRefreshProfile 
                 </div>
               )}
 
-              {selectedTaskObj && (
+              {selectedTask && (
                 <div className="p-3 bg-secondary/70 border border-neon-pink/40 space-y-1.5 animate-in fade-in">
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-foreground truncate">{selectedTaskObj.title}</span>
+                    <span className="font-bold text-foreground truncate">{selectedTask.title}</span>
                     <RetroBadge variant="pink" pixelFont className="text-[7px]">
-                      +{selectedTaskObj.xpReward} XP
+                      +{selectedTask.xpReward} XP
                     </RetroBadge>
                   </div>
                   <p className="text-[10px] text-muted-foreground">
