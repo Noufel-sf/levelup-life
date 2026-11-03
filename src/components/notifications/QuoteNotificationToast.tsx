@@ -117,3 +117,4 @@ export const QuoteNotificationToast: React.FC<QuoteNotificationToastProps> = ({
     </div>
   )
 }
+

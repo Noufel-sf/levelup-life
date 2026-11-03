@@ -436,3 +436,4 @@ export const getRandomQuote = (languageFilter?: string): WorldQuote => {
   const idx = Math.floor(Math.random() * pool.length)
   return pool[idx]
 }
+

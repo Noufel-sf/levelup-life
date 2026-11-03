@@ -46,7 +46,7 @@ export function registerIpcHandlers(mainWindow: BrowserWindow) {
     })
   })
 
-  ipcMain.handle('xp:getHistory', async (_, limit = 20) => {
+  ipcMain.handle('xp:getHistory', async (_, limit = 500) => {
     return await prisma.xPTransaction.findMany({
       orderBy: { createdAt: 'desc' },
       take: limit,
