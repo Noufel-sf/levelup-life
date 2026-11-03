@@ -144,6 +144,11 @@ export interface ElectronAPI {
   updateHabit: (id: string, data: Partial<HabitDTO>) => Promise<HabitDTO>
   toggleHabitComplete: (habitId: string, date: string) => Promise<{ habit: HabitDTO; profile: UserProfileDTO; xpAwarded: number }>
   deleteHabit: (id: string) => Promise<boolean>
+
+  // Notifications & Worldwide Quotes
+  sendQuoteNotification: (quote?: any) => Promise<any>
+  getRandomQuote: (languageFilter?: string) => Promise<any>
+  listQuotes: () => Promise<any[]>
 }
 
 declare global {

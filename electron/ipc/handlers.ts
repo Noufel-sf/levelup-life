@@ -1,6 +1,8 @@
-import { ipcMain, BrowserWindow } from 'electron'
+import { ipcMain, BrowserWindow, Notification } from 'electron'
+import path from 'node:path'
 import { prisma } from '../db/prisma'
 import { XPService } from '../services/XPService'
+import { WORLD_QUOTES, getRandomQuote, WorldQuote } from '../services/quotes'
 
 export function registerIpcHandlers(mainWindow: BrowserWindow) {
   // Window controls
@@ -394,5 +396,32 @@ export function registerIpcHandlers(mainWindow: BrowserWindow) {
       })
     }
     return true
+  })
+
+  // Worldwide Wisdom Notifications
+  ipcMain.handle('notifications:sendQuote', async (_, quote?: WorldQuote) => {
+    const q = quote || getRandomQuote()
+    if (Notification.isSupported()) {
+      try {
+        const notif = new Notification({
+          title: `${q.flag} ${q.original} [${q.language.toUpperCase()}]`,
+          body: `${q.translation} — ${q.author} (${q.culture})`,
+          icon: path.join(__dirname, '../../public/logo.png'),
+          silent: false,
+        })
+        notif.show()
+      } catch (err) {
+        console.error('Failed to display native notification:', err)
+      }
+    }
+    return q
+  })
+
+  ipcMain.handle('notifications:getRandomQuote', async (_, languageFilter?: string) => {
+    return getRandomQuote(languageFilter)
+  })
+
+  ipcMain.handle('notifications:listQuotes', async () => {
+    return WORLD_QUOTES
   })
 }

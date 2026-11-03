@@ -4,6 +4,11 @@ import fs from 'node:fs'
 import { initializeDatabase } from './db/prisma'
 import { registerIpcHandlers } from './ipc/handlers'
 
+// Set application user model ID for Windows desktop notifications
+if (process.platform === 'win32') {
+  app.setAppUserModelId('com.levelup.life')
+}
+
 // Set the directory for dist-electron
 process.env.DIST = path.join(__dirname, '../dist')
 process.env.VITE_PUBLIC = app.isPackaged

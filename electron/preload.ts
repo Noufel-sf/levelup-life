@@ -41,4 +41,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   toggleHabitComplete: (habitId: string, date: string) =>
     ipcRenderer.invoke('habits:toggleDate', { habitId, date }),
   deleteHabit: (id: string) => ipcRenderer.invoke('habits:delete', id),
+
+  // Notifications & Worldwide Quotes
+  sendQuoteNotification: (quote?: any) => ipcRenderer.invoke('notifications:sendQuote', quote),
+  getRandomQuote: (languageFilter?: string) => ipcRenderer.invoke('notifications:getRandomQuote', languageFilter),
+  listQuotes: () => ipcRenderer.invoke('notifications:listQuotes'),
 })

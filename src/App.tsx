@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { WindowFrame } from './components/layout/WindowFrame'
 import { Sidebar, NavTab } from './components/layout/Sidebar'
 import { DashboardView } from './features/dashboard/DashboardView'
@@ -9,11 +9,14 @@ import { HabitsView } from './features/habits/HabitsView'
 import { ProgressView } from './features/progress/ProgressView'
 import { AICompanionView } from './features/ai-companion/AICompanionView'
 import { SettingsView } from './features/settings/SettingsView'
+import { QuoteNotificationToast } from './components/notifications/QuoteNotificationToast'
+import { WorldQuote, getRandomQuote } from './lib/quotes'
 import { UserProfileDTO } from './types/ipc'
 
 export function App() {
   const [currentTab, setCurrentTab] = useState<NavTab>('dashboard')
   const [profile, setProfile] = useState<UserProfileDTO | null>(null)
+  const [activeQuote, setActiveQuote] = useState<WorldQuote | null>(null)
 
   const refreshProfile = async () => {
     if (window.electronAPI) {
@@ -26,9 +29,40 @@ export function App() {
     }
   }
 
+  const triggerQuote = useCallback((customQuote?: WorldQuote) => {
+    const selectedLang = localStorage.getItem('lifeos_notification_lang') || 'ALL'
+    const q = customQuote || getRandomQuote(selectedLang)
+    setActiveQuote(q)
+
+    // Check if desktop notifications are enabled
+    const desktopEnabled = localStorage.getItem('lifeos_notification_desktop') !== 'false'
+    if (desktopEnabled && window.electronAPI?.sendQuoteNotification) {
+      window.electronAPI.sendQuoteNotification(q).catch((err) => {
+        console.error('Failed to dispatch native notification:', err)
+      })
+    }
+  }, [])
+
   useEffect(() => {
     refreshProfile()
-  }, [])
+
+    // Setup periodic notification timer based on user preference
+    const setupTimer = () => {
+      const intervalPref = localStorage.getItem('lifeos_notification_interval') || '30'
+      if (intervalPref === 'off') return null
+
+      const minutes = parseInt(intervalPref, 10) || 30
+      const ms = minutes * 60 * 1000
+      return setInterval(() => {
+        triggerQuote()
+      }, ms)
+    }
+
+    const intervalId = setupTimer()
+    return () => {
+      if (intervalId) clearInterval(intervalId)
+    }
+  }, [triggerQuote])
 
   const renderContent = () => {
     switch (currentTab) {
@@ -47,7 +81,7 @@ export function App() {
       case 'ai':
         return <AICompanionView />
       case 'settings':
-        return <SettingsView />
+        return <SettingsView onTriggerQuote={triggerQuote} />
       default:
         return <DashboardView profile={profile} onRefreshProfile={refreshProfile} />
     }
@@ -58,8 +92,8 @@ export function App() {
       {/* DEV SCOPE Scanlines Overlay */}
       <div className="scanlines fixed inset-0 z-50 pointer-events-none opacity-20" />
 
-      {/* Custom Desktop Title Bar */}
-      <WindowFrame />
+      {/* Custom Desktop Title Bar with Wisdom Quote Button */}
+      <WindowFrame onTriggerQuote={() => triggerQuote()} />
 
       {/* Main App Layout */}
       <div className="flex flex-1 overflow-hidden relative">
@@ -75,6 +109,13 @@ export function App() {
           <div className="max-w-6xl mx-auto relative z-10">{renderContent()}</div>
         </main>
       </div>
+
+      {/* Global In-App Quote Notification Toast */}
+      <QuoteNotificationToast
+        quote={activeQuote}
+        onClose={() => setActiveQuote(null)}
+        onNextQuote={() => triggerQuote()}
+      />
     </div>
   )
 }

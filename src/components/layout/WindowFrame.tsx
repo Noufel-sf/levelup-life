@@ -1,7 +1,11 @@
 import React, { useState } from 'react'
-import { Minus, Square, X, Activity } from 'lucide-react'
+import { Minus, Square, X, Activity, Sparkles } from 'lucide-react'
 
-export const WindowFrame: React.FC = () => {
+interface WindowFrameProps {
+  onTriggerQuote?: () => void
+}
+
+export const WindowFrame: React.FC<WindowFrameProps> = ({ onTriggerQuote }) => {
   const [isMaximized, setIsMaximized] = useState(false)
 
   const handleMinimize = () => {
@@ -42,6 +46,16 @@ export const WindowFrame: React.FC = () => {
         <div className="hidden sm:flex items-center gap-1 px-1.5 py-0.5 bg-neon-cyan/15 border border-neon-cyan/50 text-neon-cyan text-[9px] font-mono tracking-widest shadow-[0_0_8px_rgba(34,211,238,0.3)]">
           <span>AI SYNC: 100%</span>
         </div>
+        {onTriggerQuote && (
+          <button
+            onClick={onTriggerQuote}
+            className="hidden md:flex items-center gap-1.5 px-2 py-0.5 bg-neon-yellow/15 border border-neon-yellow/50 hover:bg-neon-yellow/25 hover:border-neon-yellow text-neon-yellow text-[9px] font-mono tracking-widest shadow-[0_0_8px_rgba(250,204,21,0.25)] transition-all cursor-pointer"
+            title="Draw an inspiring worldwide quote & trigger desktop notification"
+          >
+            <Sparkles className="w-3 h-3 text-neon-yellow" />
+            <span>GLOBAL WISDOM</span>
+          </button>
+        )}
       </div>
 
       <div className="flex items-center space-x-1 no-drag">
