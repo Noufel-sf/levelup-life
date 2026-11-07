@@ -226,3 +226,4 @@ export const PixelAvatar: React.FC<PixelAvatarProps> = ({
     </div>
   )
 }
+

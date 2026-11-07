@@ -125,3 +125,4 @@ export function getAvatarById(id?: string): PixelAvatar {
   const found = AVATARS.find((a) => a.id === id)
   return found || AVATARS[0]
 }
+

@@ -73,7 +73,7 @@ function AppShell({
       case 'settings':
         return <SettingsView onTriggerQuote={triggerQuote} profile={profile} refreshProfile={refreshProfile} />
       default:
-        return <DashboardView profile={profile} onRefreshProfile={refreshProfile} />
+        return <DashboardView profile={profile} onRefreshProfile={refreshProfile} onNavigateTab={setCurrentTab} />
     }
   }
 

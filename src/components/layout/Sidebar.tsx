@@ -130,15 +130,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab, profi
           </div>
         </div>
 
-        {/* Character Status Card */}
-        <div className="p-3 bg-card border-2 border-border shadow-[0_0_20px_rgba(0,0,0,0.5)] relative overflow-hidden border-t-2 border-t-neon-cyan group hover:border-neon-cyan/70 transition-all">
+        {/* Character Status Card (Clickable to Progress & Skills Matrix) */}
+        <div
+          onClick={() => {
+            soundEngine.playClick()
+            onSelectTab('progress')
+          }}
+          className="p-3 bg-card border-2 border-border shadow-[0_0_20px_rgba(0,0,0,0.5)] relative overflow-hidden border-t-2 border-t-neon-cyan group hover:border-neon-cyan hover:shadow-[0_0_25px_rgba(34,211,238,0.3)] transition-all cursor-pointer"
+          title="Click to view full RPG Character Profile & Skill Tree"
+        >
           {/* Subtle colored corner dots */}
           <span className="absolute top-0 right-0 w-2 h-2 bg-neon-pink/80" />
           <span className="absolute bottom-0 left-0 w-2 h-2 bg-neon-green/80" />
 
           <div className="flex items-center space-x-3 mb-2.5">
             <div className="relative shrink-0">
-              <div className="w-10 h-10 bg-secondary border-2 border-neon-pink flex items-center justify-center shadow-[0_0_12px_rgba(236,72,153,0.4)] p-0.5 overflow-hidden">
+              <div className="w-10 h-10 bg-secondary border-2 border-neon-pink flex items-center justify-center shadow-[0_0_12px_rgba(236,72,153,0.4)] p-0.5 overflow-hidden group-hover:scale-105 transition-transform">
                 <PixelAvatar avatarId={profile?.avatarId} size="md" showBorder={false} />
               </div>
               <div className="absolute -bottom-1.5 -right-1.5">
@@ -149,7 +156,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab, profi
             </div>
 
             <div className="overflow-hidden flex-1 min-w-0">
-              <p className="text-[10px] font-pixel text-foreground truncate tracking-wide">{profile?.name || 'Player One'}</p>
+              <p className="text-[10px] font-pixel text-foreground truncate tracking-wide group-hover:text-neon-cyan transition-colors">
+                {profile?.name || 'Player One'}
+              </p>
               <p className="text-[8px] font-pixel truncate text-transparent bg-clip-text bg-gradient-to-r from-neon-pink via-neon-yellow to-neon-cyan font-bold mt-0.5">
                 {profile?.title || 'Novice Adventurer'}
               </p>
@@ -165,6 +174,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab, profi
               </span>
             </div>
             <RetroProgressBar value={currentXp} max={xpNeeded} variant="cyan" />
+          </div>
+
+          {/* Hover hint */}
+          <div className="mt-2 pt-1.5 border-t border-border/40 flex justify-between items-center text-[8px] font-mono text-muted-foreground group-hover:text-neon-cyan transition-colors">
+            <span>[VIEW RPG STATS]</span>
+            <span>➔</span>
           </div>
         </div>
 

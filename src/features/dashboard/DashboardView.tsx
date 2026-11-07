@@ -20,15 +20,22 @@ import { RetroBadge } from '@/components/8bit/RetroBadge'
 import { RetroProgressBar } from '@/components/8bit/RetroProgressBar'
 import { RetroInput } from '@/components/8bit/RetroInput'
 import { PixelAvatar } from '@/components/character/PixelAvatar'
+import { DashboardSkillsCard } from './DashboardSkillsCard'
+import { DashboardPomodoroCard } from './DashboardPomodoroCard'
 import { soundEngine } from '@/lib/sound'
 import { UserProfileDTO, TaskDTO, HabitDTO } from '@/types/ipc'
 
 interface DashboardViewProps {
   profile: UserProfileDTO | null
   onRefreshProfile: () => void
+  onNavigateTab?: (tab: any) => void
 }
 
-export const DashboardView: React.FC<DashboardViewProps> = ({ profile, onRefreshProfile }) => {
+export const DashboardView: React.FC<DashboardViewProps> = ({
+  profile,
+  onRefreshProfile,
+  onNavigateTab,
+}) => {
   const [allTasks, setAllTasks] = useState<TaskDTO[]>([])
   const [habits, setHabits] = useState<HabitDTO[]>([])
   const [newTaskTitle, setNewTaskTitle] = useState('')
@@ -308,11 +315,21 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ profile, onRefresh
           <p className="text-[10px] text-neon-pink/80 mt-1 font-mono font-bold">Daily rituals active</p>
         </div>
 
-        {/* Green Agent Rank Metric Card with Equipped Avatar */}
-        <div className="p-4 bg-neon-green/10 border-2 border-neon-green hover:border-neon-green transition-all shadow-[0_0_20px_rgba(163,230,53,0.25)] relative overflow-hidden group">
+        {/* Green Agent Rank Metric Card with Equipped Avatar (Clickable to Progress/Skills page) */}
+        <div
+          onClick={() => {
+            soundEngine.playClick()
+            if (onNavigateTab) onNavigateTab('progress')
+          }}
+          className="p-4 bg-neon-green/10 border-2 border-neon-green hover:border-neon-green hover:bg-neon-green/20 transition-all shadow-[0_0_20px_rgba(163,230,53,0.25)] relative overflow-hidden group cursor-pointer"
+          title="Click to view full RPG Character Progression & Skills"
+        >
           <span className="absolute top-0 right-0 w-2 h-2 bg-neon-green shadow-[0_0_6px_#a3e635]" />
           <div className="flex items-center justify-between text-[10px] font-mono font-bold uppercase mb-2">
-            <span className="text-neon-green">[AGENT RANK]</span>
+            <span className="text-neon-green flex items-center gap-1">
+              [AGENT RANK]
+              <span className="text-[8px] text-neon-green/60">➔</span>
+            </span>
             <div className="w-8 h-8 border border-neon-green flex items-center justify-center shadow-[0_0_10px_rgba(163,230,53,0.4)] overflow-hidden">
               <PixelAvatar avatarId={profile?.avatarId} size="sm" showBorder={false} />
             </div>
@@ -572,11 +589,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ profile, onRefresh
               )}
             </div>
           </div>
-        </div>
 
-        {/* Daily Habits & Character Skills */}
-        <div className="space-y-6">
-          {/* Daily Habits Card */}
+          {/* Daily Habits Protocols (Integrated into main feed) */}
           <div className="bg-card border-2 border-neon-pink shadow-[0_0_25px_rgba(236,72,153,0.2)] p-4 relative">
             <span className="absolute -top-1 -right-1 w-2 h-2 bg-neon-pink shadow-[0_0_6px_#ec4899]" />
 
@@ -649,53 +663,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ profile, onRefresh
               )}
             </div>
           </div>
+        </div>
 
-          {/* Character Skill Matrix */}
-          <div className="bg-card border-2 border-neon-green shadow-[0_0_25px_rgba(163,230,53,0.2)] p-4 relative">
-            <span className="absolute -top-1 -right-1 w-2 h-2 bg-neon-green shadow-[0_0_6px_#a3e635]" />
+        {/* Right Column: Life Skills Matrix Chart & Neural Pomodoro Focus Runner */}
+        <div className="space-y-6">
+          {/* Life Skills Matrix Chart (DealDeck style concentric rings) */}
+          <DashboardSkillsCard profile={profile} onNavigateTab={onNavigateTab} />
 
-            <div className="flex items-center justify-between pb-3 border-b border-neon-green/40 mb-3">
-              <div className="flex items-center space-x-2">
-                <div className="w-7 h-7 bg-neon-green/20 border border-neon-green flex items-center justify-center text-neon-green shadow-[0_0_10px_rgba(163,230,53,0.4)]">
-                  <TrendingUp className="w-4 h-4" />
-                </div>
-                <h3 className="font-pixel text-xs text-neon-green tracking-wider">ATTRIBUTES</h3>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2.5">
-              {profile?.skills?.map((skill, idx) => {
-                const barVariants: Array<'cyan' | 'purple' | 'pink' | 'green' | 'gold'> = [
-                  'cyan',
-                  'purple',
-                  'green',
-                  'gold',
-                ]
-                const variant = barVariants[idx % barVariants.length]
-                const badgeVariants: Array<'cyan' | 'primary' | 'green' | 'gold'> = [
-                  'cyan',
-                  'primary',
-                  'green',
-                  'gold',
-                ]
-
-                return (
-                  <div
-                    key={skill.id}
-                    className="p-2.5 bg-secondary border border-border hover:border-neon-cyan/60 transition-colors shadow-sm"
-                  >
-                    <div className="flex justify-between items-center mb-1.5">
-                      <span className="text-[11px] font-mono font-bold text-foreground">{skill.name}</span>
-                      <RetroBadge variant={badgeVariants[idx % badgeVariants.length]} pixelFont className="text-[8px] py-0 px-1">
-                        Lv.{skill.level}
-                      </RetroBadge>
-                    </div>
-                    <RetroProgressBar value={skill.xp % 100} max={100} variant={variant} />
-                  </div>
-                )
-              })}
-            </div>
-          </div>
+          {/* Neural Pomodoro Focus Deck (Direct Sprint Runner) */}
+          <DashboardPomodoroCard onNavigateTab={onNavigateTab} />
         </div>
       </div>
     </div>
