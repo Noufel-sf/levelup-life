@@ -17,6 +17,7 @@ import { RetroBadge } from '@/components/8bit/RetroBadge'
 import { RetroCard } from '@/components/8bit/RetroCard'
 import { RetroInput } from '@/components/8bit/RetroInput'
 import { TaskDTO, GoalDTO } from '@/types/ipc'
+import { useClickOutside } from '@/hooks/useClickOutside'
 
 interface CalendarViewProps {
   onRefreshProfile?: () => void
@@ -30,6 +31,9 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onRefreshProfile }) 
   const [tasks, setTasks] = useState<TaskDTO[]>([])
   const [goals, setGoals] = useState<GoalDTO[]>([])
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const modalRef = useClickOutside<HTMLDivElement>(() => {
+    setIsModalOpen(false)
+  }, isModalOpen)
   const [selectedTask, setSelectedTask] = useState<TaskDTO | null>(null)
 
   // Filter categories
@@ -633,8 +637,18 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ onRefreshProfile }) 
 
       {/* Modal / Dialog for New or Edit Mission Timeblock */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md bg-card border border-border border-t-2 border-t-neon-cyan shadow-[0_0_30px_rgba(34,211,238,0.25)] p-6 relative">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) {
+              setIsModalOpen(false)
+            }
+          }}
+        >
+          <div
+            ref={modalRef}
+            className="w-full max-w-md bg-card border border-border border-t-2 border-t-neon-cyan shadow-[0_0_30px_rgba(34,211,238,0.25)] p-6 relative"
+          >
             <button
               onClick={() => setIsModalOpen(false)}
               className="absolute top-4 right-4 text-muted hover:text-foreground"

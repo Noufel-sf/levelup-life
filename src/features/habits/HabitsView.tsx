@@ -24,6 +24,7 @@ import { RetroBadge } from '@/components/8bit/RetroBadge'
 import { RetroInput } from '@/components/8bit/RetroInput'
 import { soundEngine } from '@/lib/sound'
 import { HabitDTO } from '@/types/ipc'
+import { useClickOutside } from '@/hooks/useClickOutside'
 
 interface HabitsViewProps {
   onRefreshProfile?: () => void
@@ -96,6 +97,9 @@ export const HabitsView: React.FC<HabitsViewProps> = ({ onRefreshProfile }) => {
   const [isCreating, setIsCreating] = useState(false)
   const [editingHabit, setEditingHabit] = useState<HabitDTO | null>(null)
   const [deletingHabitId, setDeletingHabitId] = useState<string | null>(null)
+  const deleteModalRef = useClickOutside<HTMLDivElement>(() => {
+    setDeletingHabitId(null)
+  }, !!deletingHabitId)
   const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null)
 
   // Form states (used for both create and edit)
@@ -432,8 +436,18 @@ export const HabitsView: React.FC<HabitsViewProps> = ({ onRefreshProfile }) => {
 
       {/* Delete Confirmation Modal */}
       {deletingHabitId && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-card border-2 border-destructive p-5 max-w-md w-full shadow-[0_0_30px_rgba(239,68,68,0.4)] space-y-4">
+        <div
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) {
+              setDeletingHabitId(null)
+            }
+          }}
+        >
+          <div
+            ref={deleteModalRef}
+            className="bg-card border-2 border-destructive p-5 max-w-md w-full shadow-[0_0_30px_rgba(239,68,68,0.4)] space-y-4"
+          >
             <div className="flex items-center space-x-2 text-destructive">
               <AlertTriangle className="w-5 h-5 animate-pulse" />
               <h3 className="font-pixel text-xs tracking-wider">TERMINATE HABIT PROTOCOL?</h3>

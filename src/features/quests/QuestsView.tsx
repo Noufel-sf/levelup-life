@@ -24,6 +24,7 @@ import { RetroInput } from '@/components/8bit/RetroInput'
 import { RetroProgressBar } from '@/components/8bit/RetroProgressBar'
 import { soundEngine } from '@/lib/sound'
 import { GoalDTO, MilestoneDTO } from '@/types/ipc'
+import { useClickOutside } from '@/hooks/useClickOutside'
 
 interface QuestsViewProps {
   onRefreshProfile?: () => void
@@ -38,6 +39,9 @@ export const QuestsView: React.FC<QuestsViewProps> = ({ onRefreshProfile }) => {
 
   // Goal Form Modal State
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false)
+  const modalRef = useClickOutside<HTMLDivElement>(() => {
+    setIsGoalModalOpen(false)
+  }, isGoalModalOpen)
   const [editingGoal, setEditingGoal] = useState<GoalDTO | null>(null)
   const [goalTitle, setGoalTitle] = useState('')
   const [goalDescription, setGoalDescription] = useState('')
@@ -537,8 +541,18 @@ export const QuestsView: React.FC<QuestsViewProps> = ({ onRefreshProfile }) => {
 
       {/* Main Quest Modal Dialog */}
       {isGoalModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="w-full max-w-lg bg-card border border-border border-t-2 border-t-neon-cyan shadow-[0_0_30px_rgba(34,211,238,0.25)] p-6 relative">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) {
+              setIsGoalModalOpen(false)
+            }
+          }}
+        >
+          <div
+            ref={modalRef}
+            className="w-full max-w-lg bg-card border border-border border-t-2 border-t-neon-cyan shadow-[0_0_30px_rgba(34,211,238,0.25)] p-6 relative"
+          >
             <button
               onClick={() => setIsGoalModalOpen(false)}
               className="absolute top-4 right-4 text-muted-foreground hover:text-foreground cursor-pointer"

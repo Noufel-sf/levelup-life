@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Sparkles, X, Globe, Copy, Check, ChevronRight } from 'lucide-react'
 import { WorldQuote } from '@/lib/quotes'
+import { useClickOutside } from '@/hooks/useClickOutside'
 
 interface QuoteNotificationToastProps {
   quote: WorldQuote | null
@@ -14,6 +15,9 @@ export const QuoteNotificationToast: React.FC<QuoteNotificationToastProps> = ({
   onNextQuote,
 }) => {
   const [copied, setCopied] = useState(false)
+  const toastRef = useClickOutside<HTMLDivElement>(() => {
+    onClose()
+  }, !!quote)
 
   useEffect(() => {
     if (!quote) return
@@ -38,7 +42,10 @@ export const QuoteNotificationToast: React.FC<QuoteNotificationToastProps> = ({
 
   return (
     <div className="fixed bottom-6 right-6 z-50 max-w-md w-[calc(100vw-3rem)] animate-in slide-in-from-bottom-5 duration-300">
-      <div className="bg-[#121215]/95 backdrop-blur-md border-2 border-neon-cyan shadow-[0_0_30px_rgba(34,211,238,0.35)] p-4 relative overflow-hidden">
+      <div
+        ref={toastRef}
+        className="bg-[#121215]/95 backdrop-blur-md border-2 border-neon-cyan shadow-[0_0_30px_rgba(34,211,238,0.35)] p-4 relative overflow-hidden"
+      >
         {/* Pixel corner accents */}
         <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-neon-cyan shadow-[0_0_8px_#22d3ee]" />
         <span className="absolute -bottom-1 -left-1 w-2.5 h-2.5 bg-neon-pink shadow-[0_0_8px_#ec4899]" />

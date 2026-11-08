@@ -20,6 +20,7 @@ import {
 import { soundEngine } from '@/lib/sound'
 import { NavTab } from '@/components/layout/Sidebar'
 import { TaskDTO, GoalDTO } from '@/types/ipc'
+import { useClickOutside } from '@/hooks/useClickOutside'
 
 interface CommandPaletteProps {
   isOpen: boolean
@@ -49,6 +50,9 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   const [tasks, setTasks] = useState<TaskDTO[]>([])
   const [goals, setGoals] = useState<GoalDTO[]>([])
   const inputRef = useRef<HTMLInputElement>(null)
+  const modalRef = useClickOutside<HTMLDivElement>(() => {
+    onClose()
+  }, isOpen)
 
   useEffect(() => {
     if (isOpen) {
@@ -311,8 +315,16 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-start justify-center pt-20 p-4 animate-in fade-in duration-150">
+    <div
+      className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-start justify-center pt-20 p-4 animate-in fade-in duration-150"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose()
+        }
+      }}
+    >
       <div
+        ref={modalRef}
         className="w-full max-w-xl bg-card border-2 border-neon-cyan shadow-[0_0_35px_rgba(34,211,238,0.35)] overflow-hidden relative font-mono text-xs"
         onKeyDown={handleKeyDown}
       >

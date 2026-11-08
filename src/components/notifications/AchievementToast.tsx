@@ -2,6 +2,7 @@ import React, { useEffect } from 'react'
 import { Award, Sparkles, X, Trophy } from 'lucide-react'
 import { soundEngine } from '@/lib/sound'
 import { AchievementDTO } from '@/types/ipc'
+import { useClickOutside } from '@/hooks/useClickOutside'
 
 interface AchievementToastProps {
   achievement: AchievementDTO | null
@@ -9,6 +10,9 @@ interface AchievementToastProps {
 }
 
 export const AchievementToast: React.FC<AchievementToastProps> = ({ achievement, onClose }) => {
+  const toastRef = useClickOutside<HTMLDivElement>(() => {
+    onClose()
+  }, !!achievement)
   useEffect(() => {
     if (!achievement) return
     soundEngine.playAchievement()
@@ -22,7 +26,10 @@ export const AchievementToast: React.FC<AchievementToastProps> = ({ achievement,
 
   return (
     <div className="fixed top-12 left-1/2 -translate-x-1/2 z-50 max-w-md w-[calc(100vw-2rem)] animate-in slide-in-from-top-6 duration-300">
-      <div className="bg-[#121215]/95 border-2 border-neon-yellow shadow-[0_0_35px_rgba(250,204,21,0.5)] p-4 relative overflow-hidden backdrop-blur-md">
+      <div
+        ref={toastRef}
+        className="bg-[#121215]/95 border-2 border-neon-yellow shadow-[0_0_35px_rgba(250,204,21,0.5)] p-4 relative overflow-hidden backdrop-blur-md"
+      >
         <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-neon-yellow shadow-[0_0_8px_#facc15]" />
         <span className="absolute -bottom-1 -left-1 w-2.5 h-2.5 bg-neon-cyan shadow-[0_0_8px_#22d3ee]" />
 

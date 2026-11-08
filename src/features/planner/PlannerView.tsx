@@ -29,6 +29,7 @@ import { RetroInput } from '@/components/8bit/RetroInput'
 import { RetroProgressBar } from '@/components/8bit/RetroProgressBar'
 import { soundEngine } from '@/lib/sound'
 import { TaskDTO, GoalDTO } from '@/types/ipc'
+import { useClickOutside } from '@/hooks/useClickOutside'
 
 interface PlannerViewProps {
   onRefreshProfile?: () => void
@@ -57,6 +58,9 @@ export const PlannerView: React.FC<PlannerViewProps> = ({ onRefreshProfile }) =>
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const modalRef = useClickOutside<HTMLDivElement>(() => {
+    setIsModalOpen(false)
+  }, isModalOpen)
   const [selectedTask, setSelectedTask] = useState<TaskDTO | null>(null)
   const [formTitle, setFormTitle] = useState('')
   const [formDate, setFormDate] = useState('')
@@ -1109,8 +1113,18 @@ export const PlannerView: React.FC<PlannerViewProps> = ({ onRefreshProfile }) =>
 
       {/* Mission Modal Dialog */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md bg-card border-2 border-neon-cyan shadow-[0_0_30px_rgba(34,211,238,0.25)] p-6 relative">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) {
+              setIsModalOpen(false)
+            }
+          }}
+        >
+          <div
+            ref={modalRef}
+            className="w-full max-w-md bg-card border-2 border-neon-cyan shadow-[0_0_30px_rgba(34,211,238,0.25)] p-6 relative"
+          >
             <button
               onClick={() => setIsModalOpen(false)}
               className="absolute top-4 right-4 text-muted-foreground hover:text-foreground cursor-pointer"

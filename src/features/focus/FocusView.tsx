@@ -17,6 +17,7 @@ import { RetroProgressBar } from '@/components/8bit/RetroProgressBar'
 import { useFocus, TimerMode, MODE_CONFIGS } from '@/context/FocusContext'
 import { soundEngine } from '@/lib/sound'
 import { UserProfileDTO } from '@/types/ipc'
+import { useClickOutside } from '@/hooks/useClickOutside'
 
 interface FocusViewProps {
   profile: UserProfileDTO | null
@@ -48,6 +49,10 @@ export const FocusView: React.FC<FocusViewProps> = ({ profile }) => {
   // Find Focus Skill from user profile
   const focusSkill = profile?.skills?.find((s) => s.name.toLowerCase() === 'focus')
 
+  const celebrationModalRef = useClickOutside<HTMLDivElement>(() => {
+    dismissCompletedSession()
+  }, !!completedSession)
+
   return (
     <div className="space-y-6 pb-20 select-none relative">
       {/* Background ambient glowing cyber spots */}
@@ -56,8 +61,18 @@ export const FocusView: React.FC<FocusViewProps> = ({ profile }) => {
 
       {/* Completion Modal / Celebration Toast */}
       {completedSession && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-in zoom-in-95 duration-200">
-          <div className="bg-card border-2 border-neon-pink shadow-[0_0_40px_rgba(236,72,153,0.5)] p-6 max-w-md w-full relative text-center font-mono space-y-4">
+        <div
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-in zoom-in-95 duration-200"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) {
+              dismissCompletedSession()
+            }
+          }}
+        >
+          <div
+            ref={celebrationModalRef}
+            className="bg-card border-2 border-neon-pink shadow-[0_0_40px_rgba(236,72,153,0.5)] p-6 max-w-md w-full relative text-center font-mono space-y-4"
+          >
             <span className="absolute -top-1 -right-1 w-3 h-3 bg-neon-yellow shadow-[0_0_8px_#facc15]" />
             <span className="absolute -bottom-1 -left-1 w-3 h-3 bg-neon-cyan shadow-[0_0_8px_#22d3ee]" />
 
