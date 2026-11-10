@@ -35,3 +35,4 @@ export function useClickOutside<T extends HTMLElement = HTMLElement>(
 
   return ref
 }
+

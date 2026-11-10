@@ -10,6 +10,7 @@ import {
   Settings,
   Sparkles,
   Crosshair,
+  Compass,
 } from 'lucide-react'
 import { RetroProgressBar } from '../8bit/RetroProgressBar'
 import { RetroBadge } from '../8bit/RetroBadge'
@@ -17,7 +18,7 @@ import { PixelAvatar } from '@/components/character/PixelAvatar'
 import { soundEngine } from '@/lib/sound'
 import { UserProfileDTO } from '@/types/ipc'
 
-export type NavTab = 'dashboard' | 'calendar' | 'planner' | 'quests' | 'habits' | 'progress' | 'focus' | 'ai' | 'settings'
+export type NavTab = 'dashboard' | 'calendar' | 'planner' | 'quests' | 'habits' | 'wheel' | 'progress' | 'focus' | 'ai' | 'settings'
 
 interface SidebarProps {
   currentTab: NavTab
@@ -69,6 +70,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab, profi
       color: 'text-neon-green',
       activeBg: 'bg-neon-green/15 text-neon-green border-l-2 border-neon-green shadow-[inset_0_0_12px_rgba(163,230,53,0.2)]',
       badgeVariant: 'green' as const,
+    },
+    {
+      id: 'wheel' as NavTab,
+      label: 'Wheel of Life',
+      icon: Compass,
+      color: 'text-neon-cyan',
+      activeBg: 'bg-neon-cyan/15 text-neon-cyan border-l-2 border-neon-cyan shadow-[inset_0_0_12px_rgba(34,211,238,0.2)]',
+      badge: 'BALANCE',
+      badgeVariant: 'cyan' as const,
     },
     {
       id: 'progress' as NavTab,

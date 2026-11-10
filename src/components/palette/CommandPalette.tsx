@@ -16,6 +16,7 @@ import {
   ArrowRight,
   X,
   Crosshair,
+  Compass,
 } from 'lucide-react'
 import { soundEngine } from '@/lib/sound'
 import { NavTab } from '@/components/layout/Sidebar'
@@ -136,6 +137,18 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       color: 'text-neon-green',
       action: () => {
         onNavigate('habits')
+        onClose()
+      },
+    },
+    {
+      id: 'nav-wheel',
+      title: 'Go to Wheel of Life // عجلة الحياة',
+      subtitle: 'Balance 10 life pillars, priorities & evaluation',
+      icon: Compass,
+      category: 'NAVIGATION',
+      color: 'text-neon-cyan',
+      action: () => {
+        onNavigate('wheel')
         onClose()
       },
     },

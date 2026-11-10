@@ -10,6 +10,7 @@ import { ProgressView } from './features/progress/ProgressView'
 import { FocusView } from './features/focus/FocusView'
 import { AICompanionView } from './features/ai-companion/AICompanionView'
 import { SettingsView } from './features/settings/SettingsView'
+import { WheelOfLifeView } from './features/wheel-of-life/WheelOfLifeView'
 import { QuoteNotificationToast } from './components/notifications/QuoteNotificationToast'
 import { AchievementToast } from './components/notifications/AchievementToast'
 import { CommandPalette } from './components/palette/CommandPalette'
@@ -64,6 +65,8 @@ function AppShell({
         return <QuestsView onRefreshProfile={refreshProfile} />
       case 'habits':
         return <HabitsView onRefreshProfile={refreshProfile} />
+      case 'wheel':
+        return <WheelOfLifeView profile={profile} onNavigateTab={setCurrentTab} />
       case 'progress':
         return <ProgressView profile={profile} />
       case 'focus':
