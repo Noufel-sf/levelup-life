@@ -229,27 +229,30 @@ export const WheelOfLifeChart: React.FC<WheelOfLifeChartProps> = ({
         <circle
           cx={cx}
           cy={cy}
-          r={isCompact ? 16 : 22}
-          fill="#100b1d"
+          r={isCompact ? 24 : 20}
+          fill="#0c0817"
           stroke="#22d3ee"
-          strokeWidth="2"
+          strokeWidth="1.5"
           className="shadow-lg"
           style={{ filter: 'drop-shadow(0 0 8px rgba(34,211,238,0.5))' }}
         />
-        <circle cx={cx} cy={cy} r={isCompact ? 5 : 7} fill="#ec4899" />
+        {!isCompact && (
+          <circle cx={cx} cy={cy} r={6} fill="#ec4899" />
+        )}
       </svg>
 
-      {/* Central Metric Badge in Compact Mode (For Dashboard Home) */}
+      {/* Central Metric Badge in Compact Mode (Clean, legible, no collision) */}
       {isCompact && (
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
-          <span className="font-pixel text-[13px] text-neon-cyan font-bold drop-shadow-[0_0_8px_rgba(34,211,238,0.6)]">
+          <span className="font-pixel text-[12px] text-neon-cyan font-bold drop-shadow-[0_0_6px_rgba(34,211,238,0.7)] leading-none">
             {avgScore}
           </span>
-          <span className="text-[7px] font-mono uppercase text-muted-foreground tracking-widest">
-            BALANCE
+          <span className="text-[7px] font-mono uppercase text-muted-foreground tracking-widest mt-0.5">
+            /10
           </span>
         </div>
       )}
     </div>
   )
 }
+

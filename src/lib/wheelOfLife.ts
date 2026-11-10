@@ -178,3 +178,4 @@ export function saveWheelOfLifeData(data: WheelOfLifeData): void {
     console.error('Failed to save Wheel of Life data', err)
   }
 }
+
